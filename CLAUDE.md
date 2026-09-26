@@ -84,4 +84,24 @@ Context for every Claude Code session working on this repository. Read this firs
 ## Decisions log
 
 <!-- Append confirmed decisions here, with date. -->
-- 2026-09-26: Repository initialized; costing module plan pending approval.
+- 2026-09-26: Repository initialized. Costing module plan approved ("setuju semua"):
+  1. **Waste**: cost per piece = batch cost / (yield × (1 − waste%)). Waste reduces sellable output.
+  2. **Recipe yield unit**: `pcs | porsi | g | ml`. A sub-recipe is used in other recipes in its
+     yield unit (e.g. 30 g pistachio cream).
+  3. **Units**: recipe item units must be in the same family as the ingredient's base unit
+     (g/kg, ml/liter, pcs). No g↔ml density conversion. Eggs are bought and used per **pcs**.
+  4. **Supplier products** (e.g. supplier croissant) are ingredients with category `bahan`, unit pcs.
+  5. **Selling price is stored excluding PBJT.** HPP % uses the pre-tax price. PBJT 10% is a
+     display option only. (Whether PBJT applies to online sales is still open. The display
+     toggle works either way.)
+  6. **Permissions**: `owner` and `admin` have full access. `produksi` (Mami) can read everything
+     and create/edit ingredients and recipes, but cannot delete, and cannot change recipe selling
+     price or target HPP. Bundles are read-only for her. `manager` is read-only for now.
+  7. **Login**: email + password. No public sign-up. Accounts are created by Alto in the Supabase
+     dashboard, and the role is set in `profiles`.
+  8. **Default target HPP** is 35% (editable per recipe/bundle). Price rounding (Rp 500 / Rp 1.000)
+     is picked on screen and defaults to Rp 1.000. It is not stored per recipe.
+  9. **Bundles** have their own selling price and target HPP and appear on the summary page.
+     Greeting cards are ingredients with category `kemasan`.
+  10. **Supabase**: migration files live in the repo. No changes to any live project without
+      Alto's permission. Tooling is npm + Vitest.
