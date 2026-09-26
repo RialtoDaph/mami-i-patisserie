@@ -81,6 +81,18 @@ Context for every Claude Code session working on this repository. Read this firs
 3. Work in stages: schema & migrations + RLS → calculation functions + tests → UI.
 4. README (Bahasa Indonesia): Supabase setup, env, run locally, deploy to Vercel.
 
+## Repo map & commands
+
+- `supabase/migrations/` — schema, RLS, RPCs (`save_recipe`, `duplicate_recipe`, `save_bundle`).
+  Units logic in SQL (`purchase_unit_factor`, `unit_family`) must match `src/lib/costing/units.ts`.
+- `supabase/seed.sql` DUMMY data · `supabase/remove_dummy.sql` · `supabase/tests/` + `scripts/test-db.sh` (RLS tests).
+- `src/lib/costing/` — pure calculation functions + Vitest tests (`fixtures.ts` mirrors the seed).
+- `src/lib/data.ts` (server data loading), `src/lib/actions.ts` (server actions), `src/lib/permissions.ts`
+  (UI-only mirror of RLS), `src/proxy.ts` (Next 16 "proxy" = middleware; guards `/app`).
+- Pages: `/app` summary, `/app/bahan`, `/app/resep`, `/app/paket`, `/app/ringkasan/export` (CSV), `/login`.
+- Checks: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
+- PostgREST note: `recipes`↔`recipe_items` has two FKs, so embed with `recipe_items!recipe_items_recipe_id_fkey(...)`.
+
 ## Decisions log
 
 <!-- Append confirmed decisions here, with date. -->
@@ -105,3 +117,16 @@ Context for every Claude Code session working on this repository. Read this firs
      Greeting cards are ingredients with category `kemasan`.
   10. **Supabase**: migration files live in the repo. No changes to any live project without
       Alto's permission. Tooling is npm + Vitest.
+- 2026-09-26: Pack purchases: `purchase_qty` is the pack content in base units (e.g. 227 g).
+  For kg/liter/pcs it is in purchase units. A new login has no role (and no access) until the owner sets one.
+  When produksi duplicates a recipe, the copy gets no selling price and target 35%.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

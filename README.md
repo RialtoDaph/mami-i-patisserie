@@ -1,1 +1,126 @@
-# mami-i-patisserie
+# Mami I Pâtisserie — Sistem Internal & Website
+
+Satu aplikasi untuk:
+
+- **Website publik** di `/` (sementara masih halaman sederhana)
+- **Aplikasi internal** di `/app` (wajib login). Tahap ini berisi **modul costing resep**:
+  bahan & kemasan, resep (termasuk sub-resep), paket/hampers, ringkasan HPP, dan export CSV.
+
+> Kasir dan stok transaksi **tidak** dibuat di sini. Semua itu nanti ditangani Majoo.
+
+Teknologi: Next.js 16 (App Router) + TypeScript + Tailwind CSS, Supabase (Postgres, Auth,
+Row Level Security), deploy ke Vercel.
+
+---
+
+## 1. Setup Supabase
+
+1. Buat akun di [supabase.com](https://supabase.com), lalu klik **New project**.
+   - Region: pilih **Southeast Asia (Singapore)** supaya cepat dari Bandung.
+   - Simpan password database di tempat aman.
+2. Jalankan migration (membuat tabel, aturan akses, dan fungsi):
+   - Buka **SQL Editor** → **New query**.
+   - Salin isi file-file ini **secara berurutan**, lalu klik **Run** untuk tiap file:
+     1. `supabase/migrations/20260926000001_roles_profiles.sql`
+     2. `supabase/migrations/20260926000002_costing_schema.sql`
+     3. `supabase/migrations/20260926000003_rls_and_rpc.sql`
+   - *Alternatif untuk yang terbiasa pakai terminal:* `npx supabase link` lalu `npx supabase db push`.
+3. (Opsional) Isi **data contoh DUMMY**: jalankan `supabase/seed.sql` di SQL Editor.
+   Semua data contoh namanya diawali `[DUMMY]` dan harganya **karangan**.
+   Sebelum memasukkan data asli, hapus semuanya dengan `supabase/remove_dummy.sql`.
+4. Matikan pendaftaran publik: **Authentication → Sign In / Providers → Email**.
+   Matikan **Allow new users to sign up**, sehingga hanya Alto yang bisa membuat akun.
+5. Buat akun tim di **Authentication → Users → Add user → Create new user**.
+   Isi email + password dan centang **Auto Confirm User**.
+6. Beri peran lewat **SQL Editor**. Akun tanpa peran bisa login tapi tidak bisa melihat data apa pun.
+
+   ```sql
+   update public.profiles p set role = 'owner', full_name = 'Alto'
+   from auth.users u where u.id = p.id and u.email = 'email-alto@contoh.com';
+
+   update public.profiles p set role = 'admin', full_name = 'Nana'
+   from auth.users u where u.id = p.id and u.email = 'email-nana@contoh.com';
+
+   update public.profiles p set role = 'produksi', full_name = 'Mami'
+   from auth.users u where u.id = p.id and u.email = 'email-mami@contoh.com';
+   ```
+
+### Hak akses
+
+| Peran | Bisa apa |
+|---|---|
+| `owner` (Alto) | Semua |
+| `admin` (Nana) | Semua |
+| `produksi` (Mami) | Lihat semua; tambah & ubah bahan dan resep. **Tidak bisa** menghapus, mengubah harga jual/target HPP, atau mengubah paket. |
+| `manager` | Hanya lihat (disiapkan untuk manajer outlet nanti) |
+
+Aturan ini dijaga langsung oleh database (Row Level Security + trigger), jadi tetap aman
+walaupun ada yang mencoba lewat jalur lain.
+
+## 2. Environment variable
+
+Salin `.env.example` menjadi `.env.local`, lalu isi dari **Supabase → Project Settings → API**
+(atau **Connect**):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...   # "anon public" / "publishable" key
+```
+
+`.env.local` **tidak** ikut masuk ke Git. Jangan pernah memakai atau commit `service_role` key.
+
+## 3. Menjalankan di komputer sendiri
+
+Butuh [Node.js](https://nodejs.org) versi 20 atau lebih baru.
+
+```bash
+npm install
+npm run dev
+```
+
+Buka http://localhost:3000, lalu masuk lewat http://localhost:3000/login.
+
+Perintah lain:
+
+| Perintah | Fungsi |
+|---|---|
+| `npm test` | Unit test fungsi perhitungan (Vitest) |
+| `npm run lint` | Cek kode |
+| `npm run typecheck` | Cek tipe TypeScript |
+| `npm run build` | Build produksi |
+| `scripts/test-db.sh` | Tes aturan akses database di Postgres lokal **kosong** (lihat isi file) |
+
+## 4. Deploy ke Vercel
+
+1. Login ke [vercel.com](https://vercel.com) memakai akun GitHub.
+2. **Add New → Project**, lalu pilih repo `mami-i-patisserie`. Framework otomatis terdeteksi sebagai Next.js.
+3. Di **Environment Variables**, isi `NEXT_PUBLIC_SUPABASE_URL` dan
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` (nilainya sama dengan `.env.local`).
+4. Klik **Deploy**. Setiap push ke branch `main` akan otomatis di-deploy ulang.
+5. Di Supabase, buka **Authentication → URL Configuration** dan isi **Site URL** dengan
+   alamat Vercel, misalnya `https://mami-i-patisserie.vercel.app`.
+
+## 5. Cara pakai singkat
+
+- **Bahan**: tekan **+ Tambah**, isi nama, pilih *dibeli per* (kg / liter / pcs / pack),
+  isi jumlah dan harga, lalu **Simpan**. Harga per gram/ml/pcs dihitung otomatis.
+  - Contoh pack: butter 227 g seharga Rp 45.000 → pilih **pack**, isi pack diukur dalam **g**, isi `227`.
+  - Saat harga bahan diubah, muncul daftar produk yang **akan melewati target HPP** sebelum disimpan.
+  - Setiap perubahan harga tercatat di **Riwayat harga**.
+- **Resep**: isi hasil jadi per batch dan susut %, lalu tambahkan bahan atau sub-resep.
+  Biaya dan HPP langsung terhitung saat mengetik. Tombol **Duplikat** dipakai untuk membuat variasi.
+  - Sub-resep (misalnya pistachio cream) memakai satuan hasilnya sendiri (misalnya gram),
+    lalu dipakai di resep lain, misalnya 25 g per croissant.
+  - Resep tidak bisa saling memakai secara melingkar.
+- **Paket**: gabungkan produk, kemasan, dan kartu. Biaya paket = jumlah biaya isinya.
+- **Ringkasan**: semua produk aktif dengan HPP berwarna (**hijau** = sesuai target,
+  **merah** = di atas target). Ada pilihan harga + PBJT 10%, pembulatan saran harga ke
+  Rp 500 / Rp 1.000, dan **Export CSV**.
+
+### Rumus
+
+- Biaya per pcs = biaya per batch ÷ (hasil × (1 − susut%))
+- HPP % = biaya per pcs ÷ harga jual (harga jual disimpan **sebelum** PBJT)
+- Saran harga = biaya per pcs ÷ target HPP, dibulatkan **ke atas** ke Rp 500 / Rp 1.000
+- Margin kotor = harga jual − biaya per pcs
+- Harga + PBJT = harga jual × 1,1 (hanya untuk tampilan)
