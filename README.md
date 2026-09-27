@@ -31,6 +31,7 @@ Row Level Security), deploy ke Vercel.
      4. `supabase/migrations/20260927000001_preorder_schema.sql`
      5. `supabase/migrations/20260927000002_preorder_rls_rpc.sql`
      6. `supabase/migrations/20260927000003_public_site.sql`
+     7. `supabase/migrations/20260928000001_order_item_cost.sql`
    - Migration no. 5 juga membuat dua tempat penyimpanan foto (Storage):
      `product-photos` (foto produk, bisa dilihat publik) dan `payment-proofs` (bukti bayar, **privat**).
    - *Alternatif untuk yang terbiasa pakai terminal:* `npx supabase link` lalu `npx supabase db push`.
@@ -60,7 +61,7 @@ Row Level Security), deploy ke Vercel.
 |---|---|
 | `owner` (Alto) | Semua |
 | `admin` (Nana) | Semua |
-| `produksi` (Mami) | Lihat semua; tambah & ubah bahan, resep, order, pelanggan; catat pembayaran. **Tidak bisa** menghapus, mengubah harga jual/target HPP, mengubah paket/produk/campaign/pengaturan, atau melihat dashboard omzet. Order dibatalkan lewat status "Batal". |
+| `produksi` (Mami) | Lihat semua; tambah & ubah bahan, resep, order, pelanggan; catat pembayaran. **Tidak bisa** menghapus, mengubah harga jual/target HPP, mengubah paket/produk/campaign/pengaturan, atau melihat dashboard omzet dan laba. Order dibatalkan lewat status "Batal". |
 | `manager` | Hanya lihat (disiapkan untuk manajer outlet nanti) |
 
 Aturan ini dijaga langsung oleh database (Row Level Security + trigger), jadi tetap aman
@@ -158,7 +159,7 @@ Perintah lain:
 Navigasi bawah: **Beranda · Order · Produksi · Costing · Lainnya**.
 
 - **Beranda**: owner/admin melihat dashboard (total order, omzet, belum lunas, DP belum masuk,
-  produk terlaris, pelanggan order ulang), dan bisa difilter per campaign. Mami melihat produksi hari ini,
+  laba kotor & margin plus tabel laba per produk, produk terlaris, pelanggan order ulang), dan bisa difilter per campaign. Mami melihat produksi hari ini,
   besok, dan order 3 hari ke depan.
 - **Order baru** (3 bagian, lalu Simpan):
   1. **Pelanggan**: ketik nomor WhatsApp. Pelanggan lama langsung dikenali, dan nama/alamatnya terisi otomatis.
@@ -171,8 +172,14 @@ Navigasi bawah: **Beranda · Order · Produksi · Costing · Lainnya**.
   - Catat pembayaran (DP/pelunasan) dengan foto bukti. Begitu DP terpenuhi, status otomatis jadi "DP diterima".
   - Tombol "Tandai: …" untuk status berikutnya.
   - 4 pesan WhatsApp siap kirim: konfirmasi, pengingat pelunasan, siap diambil/dikirim, dan sudah dikirim.
+  - Owner/admin melihat HPP dan laba kotor order ini. HPP dicatat saat order disimpan, jadi laba order lama
+    tidak berubah kalau harga bahan naik. (Order yang dibuat sebelum fitur ini memakai HPP saat ini, ditandai "estimasi".)
 - **Produksi**: total per produk per tanggal ambil/kirim. "Kebutuhan resep" menguraikan paket ke resep
   dan resep ke sub-resep, termasuk jumlah batch.
+- **Produksi → Belanja**: daftar bahan & kemasan yang perlu dibeli untuk order di rentang tanggal
+  (default 7 hari ke depan), dikelompokkan per supplier. Tiap baris: beli berapa kemasan, butuh berapa, dan
+  estimasi harga. Pilihan: "Bulatkan ke batch penuh" dan "Hanya order yang sudah DP". Centang "sudah dibeli"
+  tersimpan di HP masing-masing. Ada tombol kirim daftar via WhatsApp dan unduh CSV.
 - **Lainnya → Produk**: produk jualan dibuat dari resep atau paket, misalnya "Risol frozen isi 10" = 10 × resep risol.
   Isi harga, kapasitas per minggu (Senin–Minggu), lead time, foto, dan tanda tampil di website.
 - **Lainnya → Campaign**: tanggal buka/tutup preorder, rentang tanggal ambil/kirim, DP %, produk yang termasuk,
@@ -191,5 +198,9 @@ input order bersamaan, kuota tidak bisa kelebihan.
 - Harga + PBJT = harga jual × 1,1 (hanya untuk tampilan)
 - Total order = subtotal + ongkir − diskon
 - Saran DP = total × DP %, dibulatkan **ke atas** ke Rp 1.000
+- Laba kotor order = (subtotal − diskon) − HPP. Ongkir tidak dihitung (hanya titipan ke kurir).
+- HPP produk = biaya per satuan resep × isi per produk, atau biaya paket
+- Kebutuhan bahan = jumlah batch × takaran di resep (batch = kebutuhan ÷ (hasil × (1 − susut%)));
+  kemasan beli = kebutuhan ÷ isi per kemasan, dibulatkan ke atas
 - Kuota terpakai = jumlah produk di semua order yang tidak batal, dalam minggu Senin–Minggu yang sama
   dengan tanggal ambil/kirim

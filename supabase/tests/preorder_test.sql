@@ -101,4 +101,12 @@ insert into storage.objects (bucket_id, name) values ('product-photos', 'ok.jpg'
 select pg_temp.expect_rows($q$update products set weekly_capacity = 10 where id='d3000000-0000-4000-8000-000000000003' returning 1$q$, 1, 'owner raises capacity');
 reset role;
 
+-- HPP snapshot per item is stored; missing unit_cost stays null.
+set role authenticated; set request.jwt.claim.sub = 'a0000000-0000-4000-8000-000000000003';
+create temp table t_cost as select save_order(null,
+  json_build_object('customer_id','d5000000-0000-4000-8000-000000000001','fulfill_date',(select mon + 21 from t_week),'fulfill_method','ambil')::jsonb,
+  '[{"product_id":"d3000000-0000-4000-8000-000000000001","qty":2,"unit_price":75000,"unit_cost":21500},{"product_id":"d3000000-0000-4000-8000-000000000002","qty":1,"unit_price":58000}]') as id;
+select pg_temp.expect_value($q$select string_agg(coalesce(unit_cost::text, 'null'), ',' order by sort_order) from order_items where order_id = (select id from t_cost)$q$, '21500,null', 'unit_cost snapshot stored');
+reset role;
+
 select 'ALL PREORDER TESTS PASSED';

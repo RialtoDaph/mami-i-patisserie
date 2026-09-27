@@ -10,3 +10,5 @@ export * from "./whatsapp";
 export * from "./schedule";
 export * from "./dashboard";
 export * from "./filters";
+export * from "./shopping";
+export * from "./profit";

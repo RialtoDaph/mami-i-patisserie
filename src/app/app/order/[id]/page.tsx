@@ -1,15 +1,16 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getCurrentUser } from "@/lib/data";
+import { getCurrentUser, loadCostingData } from "@/lib/data";
 import { can } from "@/lib/permissions";
 import { loadPayments, loadPreorderData } from "@/lib/preorderData";
 import { deleteOrder, deletePayment } from "@/lib/preorderActions";
 import {
   confirmationMessage, dpOutstanding, formatDateId, formatWhatsapp, FULFILL_LABEL, nextStatus, orderCountByCustomer,
-  PAYMENT_METHOD_LABEL, paymentReminderMessage, paymentStatus, readyMessage, remainingOf, shippedMessage, waLink,
+  orderProfit, PAYMENT_METHOD_LABEL, paymentReminderMessage, paymentStatus, productCosts, readyMessage, remainingOf,
+  shippedMessage, waLink,
 } from "@/lib/preorder";
-import { formatRupiah } from "@/lib/format";
+import { formatPercent, formatRupiah } from "@/lib/format";
 import { ConfirmActionButton } from "@/components/ConfirmActionButton";
 import { DummyTag, PageHeader, Row } from "@/components/ui";
 import { PaymentBadge, RepeatBadge, StatusBadge, WaButton } from "@/components/preorder";
@@ -41,6 +42,7 @@ export default async function OrderDetailPage({
   const dpDue = dpOutstanding(order.dpAmount, order.amountPaid);
   const next = nextStatus(order.status, order.fulfillMethod);
   const canEdit = can(user.role, "order.edit");
+  const profit = can(user.role, "profit.view") ? orderProfit(order, productCosts(data.products, await loadCostingData())) : null;
 
   return (
     <>
@@ -87,6 +89,17 @@ export default async function OrderDetailPage({
           {order.discount > 0 && <Row label="Diskon" value={`-${formatRupiah(order.discount)}`} />}
           <Row label="Total" value={formatRupiah(order.total)} strong />
         </div>
+        {profit && (
+          <div className="mt-2 border-t border-black/5 pt-2">
+            <Row label={`HPP${profit.estimatedItems ? " (estimasi harga saat ini)" : ""}`} value={formatRupiah(profit.hpp)} />
+            <Row
+              label="Laba kotor"
+              value={<span className={profit.profit < 0 ? "text-bad" : "text-ok"}>{formatRupiah(profit.profit)} · {formatPercent(profit.marginPct)}</span>}
+            />
+            <p className="text-xs text-muted">Subtotal − diskon − HPP. Ongkir tidak dihitung.</p>
+            {profit.missingItems > 0 && <p className="text-xs font-semibold text-bad">Ada item tanpa HPP (dihitung Rp 0).</p>}
+          </div>
+        )}
       </section>
 
       <section className="card mb-4">

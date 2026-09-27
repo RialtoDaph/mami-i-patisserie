@@ -4,9 +4,10 @@ import { getCurrentUser, loadCostingData } from "@/lib/data";
 import { can } from "@/lib/permissions";
 import { loadPreorderData } from "@/lib/preorderData";
 import {
-  addDays, dashboardStats, formatDateId, isOpen, productionSchedule, STATUS_LABEL, todayJakarta, type OrderStatus,
+  addDays, dashboardStats, formatDateId, isOpen, productCosts, productionSchedule, profitStats, STATUS_LABEL, todayJakarta,
+  type OrderStatus,
 } from "@/lib/preorder";
-import { formatRupiah } from "@/lib/format";
+import { formatPercent, formatRupiah } from "@/lib/format";
 import { PageHeader } from "@/components/ui";
 import { ProductionDay } from "@/components/ProductionDay";
 import { StatusBadge } from "@/components/preorder";
@@ -39,7 +40,10 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <div className="mb-4 flex flex-col gap-2">
         <ProductionDay day={todayPlan} today={today} />
         <ProductionDay day={tomorrowPlan} today={today} />
-        <Link href="/app/produksi" className="text-sm font-semibold text-cocoa underline">Lihat jadwal lengkap →</Link>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <Link href="/app/produksi" className="text-sm font-semibold text-cocoa underline">Lihat jadwal lengkap →</Link>
+          <Link href="/app/produksi/belanja" className="text-sm font-semibold text-cocoa underline">Daftar belanja →</Link>
+        </div>
       </div>
       <h2 className="mb-2 font-bold text-cocoa">Order 3 hari ke depan</h2>
       {upcoming.length === 0 ? (
@@ -74,6 +78,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const campaign = pre.campaigns.find((c) => c.id === kampanye) ?? null;
   const orders = campaign ? pre.orders.filter((o) => o.campaignId === campaign.id) : pre.orders;
   const s = dashboardStats(orders, pre.products, pre.customers);
+  const profit = profitStats(orders, pre.products, productCosts(pre.products, costing));
   const statusOrder: OrderStatus[] = ["baru", "menunggu_dp", "dp_diterima", "diproduksi", "siap", "dikirim", "selesai", "batal"];
 
   return (
@@ -95,6 +100,46 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <Stat label={`DP belum masuk · ${s.dpPendingCount} order`} value={formatRupiah(s.dpPendingAmount)} tone={s.dpPendingCount ? "bad" : "ok"} />
         </Link>
       </div>
+
+      <section className="card mb-4">
+        <h2 className="mb-1 font-bold text-cocoa">Laba kotor</h2>
+        <p className="mb-2 text-xs text-muted">Penjualan = subtotal − diskon (ongkir tidak dihitung). Order batal tidak dihitung.</p>
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <Stat label="Penjualan" value={formatRupiah(profit.revenue)} />
+          <Stat label="HPP" value={formatRupiah(profit.hpp)} />
+          <Stat label="Laba kotor" value={formatRupiah(profit.profit)} tone={profit.profit < 0 ? "bad" : "ok"} />
+          <Stat label="Margin" value={formatPercent(profit.marginPct)} />
+        </div>
+        {profit.byProduct.length > 0 && (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-muted">
+                <th className="py-1 font-semibold">Produk</th>
+                <th className="py-1 text-right font-semibold">Qty</th>
+                <th className="py-1 pl-2 text-right font-semibold">Laba</th>
+                <th className="py-1 pl-2 text-right font-semibold">Margin</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {profit.byProduct.map((p) => (
+                <tr key={p.productId}>
+                  <td className="py-1.5 pr-2">{p.name}</td>
+                  <td className="py-1.5 text-right tabular-nums">{p.qty}</td>
+                  <td className={`whitespace-nowrap py-1.5 pl-2 text-right tabular-nums ${p.profit < 0 ? "text-bad" : ""}`}>{formatRupiah(p.profit)}</td>
+                  <td className="py-1.5 pl-2 text-right tabular-nums">{formatPercent(p.marginPct, 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {profit.byProduct.length > 0 && <p className="mt-2 text-xs text-muted">Per produk sebelum diskon order.</p>}
+        {profit.estimatedItems > 0 && (
+          <p className="mt-1 text-xs text-muted">* {profit.estimatedItems} item memakai HPP saat ini (HPP saat order tidak tersimpan).</p>
+        )}
+        {profit.missingItems > 0 && (
+          <p className="mt-1 text-xs font-semibold text-bad">{profit.missingItems} item tanpa HPP (resep/paket belum lengkap), dihitung Rp 0.</p>
+        )}
+      </section>
 
       <section className="card mb-4">
         <h2 className="mb-2 font-bold text-cocoa">Status order</h2>

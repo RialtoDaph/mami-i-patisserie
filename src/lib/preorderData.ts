@@ -27,7 +27,7 @@ interface OrderRow {
   fulfill_method: FulfillMethod; delivery_address: string | null; status: OrderStatus; subtotal: Num;
   shipping_fee: Num; discount: Num; total: Num; dp_amount: Num; amount_paid: Num; notes: string | null;
   created_at: string; is_dummy: boolean;
-  order_items: { product_id: string; qty: number; unit_price: Num; sort_order: number }[];
+  order_items: { product_id: string; qty: number; unit_price: Num; unit_cost: Num | null; sort_order: number }[];
 }
 interface PaymentRow { id: string; amount: Num; method: PaymentMethod; proof_path: string | null; paid_at: string; note: string | null }
 interface SettingsRow {
@@ -64,7 +64,7 @@ const mapOrder = (r: OrderRow): OrderFull => ({
   shippingFee: num(r.shipping_fee), discount: num(r.discount), total: num(r.total), dpAmount: num(r.dp_amount),
   amountPaid: num(r.amount_paid), notes: r.notes, createdAt: r.created_at, isDummy: r.is_dummy,
   items: [...r.order_items].sort((a, b) => a.sort_order - b.sort_order)
-    .map((i) => ({ productId: i.product_id, qty: i.qty, unitPrice: num(i.unit_price) })),
+    .map((i) => ({ productId: i.product_id, qty: i.qty, unitPrice: num(i.unit_price), unitCost: numOrNull(i.unit_cost) })),
 });
 
 const mapSettings = (r: SettingsRow): Settings => ({
@@ -88,7 +88,7 @@ export const loadPreorderData = cache(async (): Promise<PreorderData> => {
     supabase.from("products").select("*").order("name"),
     supabase.from("campaigns").select("*, campaign_products(product_id, price_override)").order("preorder_open", { ascending: false }),
     supabase.from("customers").select("*").order("name"),
-    supabase.from("orders").select("*, order_items(product_id, qty, unit_price, sort_order)").order("fulfill_date").order("order_no"),
+    supabase.from("orders").select("*, order_items(product_id, qty, unit_price, unit_cost, sort_order)").order("fulfill_date").order("order_no"),
     supabase.from("settings").select("*").maybeSingle(),
   ]);
   const error = p.error ?? c.error ?? cu.error ?? o.error ?? s.error;
