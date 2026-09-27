@@ -87,14 +87,14 @@ update public.settings set
 
 insert into public.products
   (id, name, description, recipe_id, bundle_id, units_per_product, price, show_on_website,
-   preorder_enabled, weekly_capacity, min_lead_days, is_dummy)
+   preorder_enabled, weekly_capacity, min_lead_days, is_dummy, web_category)
 values
   ('d3000000-0000-4000-8000-000000000001', '[DUMMY] Risol Ragout Frozen isi 10', 'Risol ragout ayam beku, tinggal goreng.',
-   'd1000000-0000-4000-8000-000000000001', null, 10, 75000, true, true, 40, 2, true),
+   'd1000000-0000-4000-8000-000000000001', null, 10, 75000, true, true, 40, 2, true, 'frozen'),
   ('d3000000-0000-4000-8000-000000000002', '[DUMMY] Pistachio Croissant', 'Croissant dengan pistachio cream.',
-   'd1000000-0000-4000-8000-000000000003', null, 1, 58000, true, true, 30, 1, true),
+   'd1000000-0000-4000-8000-000000000003', null, 1, 58000, true, true, 30, 1, true, 'pastry'),
   ('d3000000-0000-4000-8000-000000000003', '[DUMMY] Blessings Box', '6 risol + 2 pistachio croissant + kartu ucapan.',
-   null, 'd2000000-0000-4000-8000-000000000001', 1, 250000, true, true, 5, 3, true);
+   null, 'd2000000-0000-4000-8000-000000000001', 1, 250000, true, true, 5, 3, true, 'hampers');
 
 -- A regular preorder campaign that is open around "today", plus Lebaran 2027.
 insert into public.campaigns

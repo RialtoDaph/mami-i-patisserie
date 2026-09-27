@@ -162,6 +162,18 @@ Context for every Claude Code session working on this repository. Read this firs
   9. `show_on_website` is stored only; the public catalog/checkout comes in the website phase.
   10. Order number `MIP-0001` (global sequence).
   11. Bank/QRIS details live in a single-row `settings` table, editable by owner/admin (seed = DUMMY placeholders).
+- 2026-09-27: **Public website v1** plan approved ("setuju semua"):
+  1. New `products.web_category`: kue_kering, frozen, kue_basah, pastry, minuman, hampers (set in the Produk form).
+  2. "Kuota minggu ini penuh" = current Mon–Sun week (Asia/Jakarta). The add button stays enabled; admin sets the date.
+  3. WhatsApp order message: items, qty, total, desired date, optional name, ambil/kirim, and a note
+     that the final price & shipping are confirmed by admin.
+  4. Items added from the Hampers page use the campaign price, and the campaign name goes in the message.
+  5. DUMMY products are hidden on the public site unless `NEXT_PUBLIC_SHOW_DUMMY=1` (for previews).
+  6. Contact/story copy lives in `src/content/site.ts`, with PLACEHOLDERs clearly marked until Alto/Nana provide it.
+     WhatsApp number via `NEXT_PUBLIC_WHATSAPP_NUMBER`, Instagram via `NEXT_PUBLIC_INSTAGRAM`, and site URL via `NEXT_PUBLIC_SITE_URL`.
+  7. Fonts: Cormorant Garamond (headings) + Inter (body) via next/font.
+  8. Public data only through read-only SECURITY DEFINER RPCs (`public_catalog`, `public_campaigns`) granted to anon;
+     base tables stay closed to anon. Brand colors are placeholder tokens in `src/app/brand.css`.
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->

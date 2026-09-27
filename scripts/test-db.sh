@@ -8,6 +8,6 @@ cd "$(dirname "$0")/.."
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -q -c 'set client_min_messages = warning; drop schema if exists auth cascade; drop schema if exists storage cascade; drop schema public cascade; create schema public;'
 cat supabase/tests/00_supabase_stub.sql supabase/migrations/*.sql supabase/seed.sql \
   | psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -q
-for f in supabase/tests/rls_test.sql supabase/tests/preorder_test.sql; do
+for f in supabase/tests/rls_test.sql supabase/tests/preorder_test.sql supabase/tests/public_test.sql; do
   psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -q -t -f "$f" 2>&1 | grep -E 'OK|FAIL|PASSED|ERROR' | sed 's/^psql:[^ ]* //'
 done
