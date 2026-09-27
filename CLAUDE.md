@@ -103,8 +103,8 @@ Context for every Claude Code session working on this repository. Read this firs
 ## Environments
 
 - Supabase project "Mami i Patiserrie" (ref `mxkmavpebiawiknnbxam`, eu-west-1). Migrations
-  20260926000001–03 + DUMMY seed applied on 2026-09-27. Preorder migrations 20260927000001–02 are
-  NOT applied yet (waiting for Alto). New migrations: add a file in
+  20260926000001–03, 20260927000001–02 (preorder) + full DUMMY seed applied on 2026-09-27.
+  New migrations: add a file in
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
   Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key).
@@ -116,6 +116,8 @@ Context for every Claude Code session working on this repository. Read this firs
 2. Supabase Auth: turn off "Allow new users to sign up"; set Site URL to the Vercel URL.
 3. Create Nana (admin) and Mami (produksi) accounts, then set roles via SQL.
 4. Optional: Vercel Function Region → Dublin (dub1), close to Supabase eu-west-1.
+5. Optional: Supabase Auth → enable leaked password protection (security advisor warning).
+6. Replace DUMMY bank/QRIS/pickup data in Lainnya → Pengaturan before real orders.
 
 ## Decisions log
 
@@ -144,6 +146,23 @@ Context for every Claude Code session working on this repository. Read this firs
 - 2026-09-26: Pack purchases: `purchase_qty` is the pack content in base units (e.g. 227 g).
   For kg/liter/pcs it is in purchase units. A new login has no role (and no access) until the owner sets one.
   When produksi duplicates a recipe, the copy gets no selling price and target 35%.
+
+- 2026-09-27: **Preorder module** plan approved ("gas dl aja yg mnrt km ok" = use Claude's recommendations):
+  1. `products` link to exactly one recipe or bundle, with `units_per_product` (e.g. risol frozen isi 10).
+  2. Product price is its own field. Campaigns may set `price_override` per product. Product HPP is shown from costing.
+  3. Capacity is weekly per product, Mon–Sun (Asia/Jakarta), based on fulfill date. Non-cancelled orders count.
+     Bundles do NOT consume their components' capacity. Hard block when full; owner raises capacity instead.
+  4. Production date = fulfill date. The schedule also expands bundles into recipes and sub-recipes.
+  5. DP default 50% (global setting), overridable per campaign and per order. The suggested DP rounds up to Rp 1.000.
+  6. Shipping fee & discount are manual per order: total = subtotal + shipping − discount.
+  7. Multiple payments per order, each with its own proof photo. When paid ≥ DP and status is baru/menunggu_dp,
+     status auto-advances to dp_diterima. Other status changes are manual.
+  8. produksi can create/edit orders, customers and payments, and cancel via status (no deletes). Products,
+     campaigns and settings are read-only for produksi. The revenue dashboard is owner/admin only. manager is read-only.
+  9. `show_on_website` is stored only; the public catalog/checkout comes in the website phase.
+  10. Order number `MIP-0001` (global sequence).
+  11. Bank/QRIS details live in a single-row `settings` table, editable by owner/admin (seed = DUMMY placeholders).
+- NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
