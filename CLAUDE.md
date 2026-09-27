@@ -93,6 +93,15 @@ Context for every Claude Code session working on this repository. Read this firs
 - Checks: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
 - PostgREST note: `recipes`↔`recipe_items` has two FKs, so embed with `recipe_items!recipe_items_recipe_id_fkey(...)`.
 
+## Environments
+
+- Supabase project "Mami i Patiserrie" (ref `mxkmavpebiawiknnbxam`, eu-west-1). Migrations
+  20260926000001–03 + DUMMY seed applied on 2026-09-27. New migrations: add a file in
+  `supabase/migrations/` AND apply it to this project (ask Alto first).
+- Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
+  Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key).
+- Users: altodaphino@gmail.com = owner (Alto). Nana/Mami accounts not created yet.
+
 ## Decisions log
 
 <!-- Append confirmed decisions here, with date. -->
