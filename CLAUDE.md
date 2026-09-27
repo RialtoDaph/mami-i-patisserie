@@ -117,14 +117,17 @@ Context for every Claude Code session working on this repository. Read this firs
 
 ## Pending reminders for Alto (remind at the end of each phase until done)
 
-1. Delete `SUPABASE_Secret_Key` (and unused `SUPABASE_Publishkey`) from Vercel env vars.
+Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below were postponed by Alto ("nanti").
+
+1. Website WhatsApp number: set `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel (no number yet; WA buttons hidden until then).
+   Also `NEXT_PUBLIC_INSTAGRAM` (and optionally `NEXT_PUBLIC_SITE_URL`).
 2. Supabase Auth: turn off "Allow new users to sign up"; set Site URL to https://mami-i-patisserie.vercel.app.
 3. Create Nana (admin) and Mami (produksi) accounts, then set roles via SQL.
-4. Optional: Vercel Function Region → Dublin (dub1), close to Supabase eu-west-1.
-5. Optional: Supabase Auth → enable leaked password protection (security advisor warning).
-6. Replace DUMMY bank/QRIS/pickup data in Lainnya → Pengaturan before real orders.
-7. Website: provide the WhatsApp number, Instagram handle, delivery areas and final copy/palette; set
-   `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_INSTAGRAM`, `NEXT_PUBLIC_SITE_URL` in Vercel.
+4. Check the site in an incognito window; if Vercel login appears, disable Vercel Authentication (Deployment Protection).
+5. Before real orders: remove DUMMY data (supabase/remove_dummy.sql, ask first), enter real products (Tampil di website),
+   replace DUMMY bank/QRIS/pickup in Lainnya → Pengaturan, test one photo upload, final website copy from Nana.
+6. Optional: delete the unused `SUPABASE_Secret_Key` / `SUPABASE_Publishkey` envs; Vercel Function Region → dub1;
+   Supabase leaked password protection. Open question: does PBJT 10% apply to online sales?
 
 ## Decisions log
 
