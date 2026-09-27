@@ -139,6 +139,22 @@ Context for every Claude Code session working on this repository. Read this firs
 
 <!-- BEGIN:nextjs-agent-rules -->
 
+- 2026-09-27: **Preorder module** plan approved ("gas dl aja yg mnrt km ok" = use Claude's recommendations):
+  1. `products` link to exactly one recipe or bundle, with `units_per_product` (e.g. risol frozen isi 10).
+  2. Product price is its own field. Campaigns may set `price_override` per product. Product HPP is shown from costing.
+  3. Capacity is weekly per product, Mon–Sun (Asia/Jakarta), based on fulfill date. Non-cancelled orders count.
+     Bundles do NOT consume their components' capacity. Hard block when full; owner raises capacity instead.
+  4. Production date = fulfill date. The schedule also expands bundles into recipes.
+  5. DP default 50% (global setting), overridable per campaign and per order. The suggested DP rounds up to Rp 1.000.
+  6. Shipping fee & discount are manual per order: total = subtotal + shipping − discount.
+  7. Multiple payments per order, each with its own proof photo. When paid ≥ DP and status is baru/menunggu_dp,
+     status auto-advances to dp_diterima. Other status changes are manual.
+  8. produksi can create/edit orders, customers and payments, and cancel via status (no deletes). Products,
+     campaigns and settings are read-only for produksi. The revenue dashboard is owner/admin only. manager is read-only.
+  9. `show_on_website` is stored only; the public catalog/checkout comes in the website phase.
+  10. Order number `MIP-0001` (global sequence).
+  11. Bank/QRIS details live in a single-row `settings` table, editable by owner/admin (seed = DUMMY placeholders).
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
