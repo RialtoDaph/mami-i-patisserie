@@ -1,0 +1,39 @@
+/*
+ * Mami I Pâtisserie — BRAND COLORS (the only place to change them).
+ * Priority / share: 1. Butter yellow (~60%) · 2. Espresso (~25%) · 3. Pistachio (~10%) · 4. French wine (~5%, CTA only).
+ * Every other shade below is derived from these four with color-mix; the internal app (globals.css) maps onto them too.
+ */
+@theme {
+  --color-brand-butter: #f5e8aa; /* Butter yellow */
+  --color-brand-espresso: #3e2723; /* Espresso */
+  --color-brand-pistachio: #a2a672; /* Pistachio (Pantone 5777 C, sampled) */
+  --color-brand-wine: #aa1945; /* French wine */
+
+  /* Derived tints/shades (contrast-checked: text pairs ≥ 4.5:1). Text on pistachio fills is always espresso. */
+  --color-brand-cream: color-mix(in srgb, var(--color-brand-butter) 30%, white); /* page base */
+  --color-brand-butter-soft: color-mix(in srgb, var(--color-brand-butter) 55%, white);
+  --color-brand-pistachio-soft: color-mix(in srgb, var(--color-brand-pistachio) 50%, white);
+  --color-brand-pistachio-deep: color-mix(in srgb, var(--color-brand-pistachio) 45%, var(--color-brand-espresso)); /* pistachio text */
+  --color-brand-wine-soft: color-mix(in srgb, var(--color-brand-wine) 14%, white);
+  --color-brand-wine-dark: color-mix(in srgb, var(--color-brand-wine) 80%, black);
+  --color-brand-muted: color-mix(in srgb, var(--color-brand-espresso) 78%, white); /* secondary text */
+}
+
+/* Font vars are set by next/font on the site wrapper (app/(site)/layout.tsx), so resolve them inline. */
+@theme inline {
+  --font-display: var(--font-brand-serif), "EB Garamond", Georgia, serif;
+  --font-body: var(--font-brand-sans), "Inter", system-ui, sans-serif;
+}
+
+@utility awning {
+  /* Parisian café awning stripes. */
+  background-image: repeating-linear-gradient(90deg, var(--color-brand-wine) 0 22px, var(--color-brand-butter) 22px 44px);
+}
+
+@utility btn-wine {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-wine px-6 font-semibold text-brand-butter transition hover:bg-brand-wine-dark active:scale-[0.98];
+}
+
+@utility btn-outline {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-brand-espresso px-6 font-semibold text-brand-espresso transition hover:bg-brand-espresso hover:text-brand-butter active:scale-[0.98];
+}

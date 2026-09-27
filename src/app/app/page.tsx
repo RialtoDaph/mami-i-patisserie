@@ -1,110 +1,144 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { buildSummary } from "@/lib/costing";
-import { loadCostingData } from "@/lib/data";
+import { getCurrentUser, loadCostingData } from "@/lib/data";
+import { can } from "@/lib/permissions";
+import { loadPreorderData } from "@/lib/preorderData";
+import {
+  addDays, dashboardStats, formatDateId, isOpen, productionSchedule, STATUS_LABEL, todayJakarta, type OrderStatus,
+} from "@/lib/preorder";
 import { formatRupiah } from "@/lib/format";
-import { RECIPE_CATEGORY_LABEL } from "@/lib/labels";
-import { parseSummaryParams, summaryQuery, type SummaryFilter } from "@/lib/summaryParams";
-import { EmptyState, HppBadge, PageHeader, Row } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
+import { ProductionDay } from "@/components/ProductionDay";
+import { StatusBadge } from "@/components/preorder";
 
-export const metadata: Metadata = { title: "Ringkasan" };
+export const metadata: Metadata = { title: "Beranda" };
 
-const FILTER_LABEL: Record<SummaryFilter, string> = {
-  semua: "Semua",
-  mamis: "Mami's",
-  pastry_supplier: "Pastry",
-  minuman: "Minuman",
-  paket: "Paket",
-};
-
-export default async function SummaryPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = parseSummaryParams(await searchParams);
-  const data = await loadCostingData();
-  const all = buildSummary(data, params);
-  const rows = all.filter((r) => params.filter === "semua" || r.category === params.filter);
-  const overCount = rows.filter((r) => r.status === "over").length;
-
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "bad" | "ok" }) {
   return (
+    <div className="card p-3">
+      <p className="text-xs font-semibold text-muted">{label}</p>
+      <p className={`text-xl font-bold tabular-nums ${tone === "bad" ? "text-bad" : tone === "ok" ? "text-ok" : "text-cocoa"}`}>{value}</p>
+    </div>
+  );
+}
+
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ kampanye?: string }> }) {
+  const { kampanye } = await searchParams;
+  const [user, pre, costing] = await Promise.all([getCurrentUser(), loadPreorderData(), loadCostingData()]);
+  const today = todayJakarta();
+  const [todayPlan, tomorrowPlan] = productionSchedule(pre.orders, pre.products, costing.recipes, costing.bundles, today, 2);
+  const upcoming = pre.orders
+    .filter((o) => isOpen(o.status) && o.fulfillDate >= today && o.fulfillDate <= addDays(today, 3))
+    .slice(0, 8);
+  const names = new Map(pre.customers.map((c) => [c.id, c.name]));
+
+  const production = (
     <>
-      <PageHeader title="Ringkasan" />
-
-      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-        {(Object.keys(FILTER_LABEL) as SummaryFilter[]).map((f) => (
-          <Link key={f} href={`/app${summaryQuery(params, { filter: f })}`} className={params.filter === f ? "chip-on" : "chip-off"}>
-            {FILTER_LABEL[f]}
-          </Link>
-        ))}
+      {can(user.role, "order.edit") && <Link href="/app/order/baru" className="btn-primary mb-4 w-full text-lg">+ Order baru</Link>}
+      <h2 className="mb-2 font-bold text-cocoa">Produksi</h2>
+      <div className="mb-4 flex flex-col gap-2">
+        <ProductionDay day={todayPlan} today={today} />
+        <ProductionDay day={tomorrowPlan} today={today} />
+        <Link href="/app/produksi" className="text-sm font-semibold text-cocoa underline">Lihat jadwal lengkap →</Link>
       </div>
-
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        <Link
-          href={`/app${summaryQuery(params, { includePbjt: !params.includePbjt })}`}
-          className={params.includePbjt ? "chip-on" : "chip-off"}
-          aria-pressed={params.includePbjt}
-        >
-          {params.includePbjt ? "✓ Harga + PBJT 10%" : "Harga tanpa PBJT"}
-        </Link>
-        <Link
-          href={`/app${summaryQuery(params, { roundingStep: params.roundingStep === 1000 ? 500 : 1000 })}`}
-          className="chip-off"
-        >
-          Bulatkan {formatRupiah(params.roundingStep)}
-        </Link>
-      </div>
-
-      <p className="mb-3 text-sm text-muted">
-        {rows.length} produk ·{" "}
-        <span className={overCount ? "font-semibold text-bad" : "font-semibold text-ok"}>
-          {overCount} di atas target HPP
-        </span>
-      </p>
-
-      {rows.length === 0 ? (
-        <EmptyState>Belum ada produk. Tambahkan resep atau paket dulu.</EmptyState>
+      <h2 className="mb-2 font-bold text-cocoa">Order 3 hari ke depan</h2>
+      {upcoming.length === 0 ? (
+        <p className="text-sm text-muted">Tidak ada.</p>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {rows.map((r) => (
-            <li key={`${r.kind}-${r.id}`}>
-              <Link
-                href={r.kind === "recipe" ? `/app/resep/${r.id}` : `/app/paket/${r.id}`}
-                className={`card block border-l-4 ${
-                  r.status === "over" ? "border-l-bad" : r.status === "under" ? "border-l-ok" : "border-l-black/10"
-                }`}
-              >
-                <div className="mb-2 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-bold leading-tight">{r.name}</p>
-                    <p className="text-xs text-muted">
-                      {r.kind === "bundle" ? "Paket" : RECIPE_CATEGORY_LABEL[r.category as keyof typeof RECIPE_CATEGORY_LABEL]}
-                      {" · target "}
-                      {r.targetHppPct}%
-                    </p>
-                  </div>
-                  <HppBadge hpp={r.hppPct} status={r.status} />
-                </div>
-                {r.error ? (
-                  <p className="text-sm font-semibold text-bad">⚠ {r.error}</p>
-                ) : (
-                  <>
-                    <Row label={r.kind === "bundle" ? "Biaya per paket" : `Biaya per ${r.unit}`} value={formatRupiah(r.cost)} />
-                    <Row label={params.includePbjt ? "Harga jual + PBJT" : "Harga jual"} value={formatRupiah(r.displayPrice)} />
-                    <Row label="Margin kotor" value={formatRupiah(r.margin)} />
-                    <Row label="Saran harga" value={formatRupiah(r.suggestedPrice)} />
-                  </>
-                )}
+        <ul className="mb-4 flex flex-col gap-2">
+          {upcoming.map((o) => (
+            <li key={o.id}>
+              <Link href={`/app/order/${o.id}`} className="card flex items-center justify-between gap-2 p-3">
+                <span>
+                  <b>{names.get(o.customerId)}</b>
+                  <span className="block text-xs text-muted">{o.orderNo} · {formatDateId(o.fulfillDate)}</span>
+                </span>
+                <StatusBadge status={o.status} />
               </Link>
             </li>
           ))}
         </ul>
       )}
+    </>
+  );
 
-      <a href={`/app/ringkasan/export${summaryQuery(params)}`} className="btn-secondary mt-6 w-full" download>
-        ⬇ Export CSV
-      </a>
+  if (!can(user.role, "dashboard.view")) {
+    return (
+      <>
+        <PageHeader title={`Halo${user.fullName ? `, ${user.fullName}` : ""}!`} />
+        {production}
+      </>
+    );
+  }
+
+  const campaign = pre.campaigns.find((c) => c.id === kampanye) ?? null;
+  const orders = campaign ? pre.orders.filter((o) => o.campaignId === campaign.id) : pre.orders;
+  const s = dashboardStats(orders, pre.products, pre.customers);
+  const statusOrder: OrderStatus[] = ["baru", "menunggu_dp", "dp_diterima", "diproduksi", "siap", "dikirim", "selesai", "batal"];
+
+  return (
+    <>
+      <PageHeader title="Dashboard" />
+      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <Link href="/app" className={!campaign ? "chip-on" : "chip-off"}>Semua</Link>
+        {pre.campaigns.map((c) => (
+          <Link key={c.id} href={`/app?kampanye=${c.id}`} className={campaign?.id === c.id ? "chip-on" : "chip-off"}>{c.name}</Link>
+        ))}
+      </div>
+
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        <Stat label="Total order" value={String(s.orderCount)} />
+        <Stat label="Omzet" value={formatRupiah(s.revenue)} />
+        <Stat label="Sudah dibayar" value={formatRupiah(s.paid)} tone="ok" />
+        <Stat label="Belum lunas" value={formatRupiah(s.outstanding)} tone={s.outstanding > 0 ? "bad" : undefined} />
+        <Link href={`/app/order?status=menunggu_dp${campaign ? `&kampanye=${campaign.id}` : ""}`} className="col-span-2">
+          <Stat label={`DP belum masuk · ${s.dpPendingCount} order`} value={formatRupiah(s.dpPendingAmount)} tone={s.dpPendingCount ? "bad" : "ok"} />
+        </Link>
+      </div>
+
+      <section className="card mb-4">
+        <h2 className="mb-2 font-bold text-cocoa">Status order</h2>
+        <div className="flex flex-wrap gap-2">
+          {statusOrder.filter((st) => s.byStatus[st] > 0).map((st) => (
+            <Link key={st} href={`/app/order?status=${st}${campaign ? `&kampanye=${campaign.id}` : ""}`} className="chip-off">
+              {STATUS_LABEL[st]} · {s.byStatus[st]}
+            </Link>
+          ))}
+          {s.orderCount + s.cancelledCount === 0 && <span className="text-sm text-muted">Belum ada order.</span>}
+        </div>
+      </section>
+
+      <section className="card mb-4">
+        <h2 className="mb-2 font-bold text-cocoa">Produk terlaris</h2>
+        {s.topProducts.length === 0 ? <p className="text-sm text-muted">Belum ada.</p> : (
+          <ol className="flex flex-col gap-1">
+            {s.topProducts.map((p, i) => (
+              <li key={p.productId} className="flex justify-between gap-2">
+                <span>{i + 1}. {p.name}</span>
+                <span className="tabular-nums"><b>{p.qty}</b> <span className="text-sm text-muted">· {formatRupiah(p.revenue)}</span></span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section className="card mb-6">
+        <h2 className="mb-2 font-bold text-cocoa">Pelanggan order ulang</h2>
+        {s.repeatCustomers.length === 0 ? <p className="text-sm text-muted">Belum ada.</p> : (
+          <ul className="flex flex-col gap-1">
+            {s.repeatCustomers.slice(0, 10).map((c) => (
+              <li key={c.customerId}>
+                <Link href={`/app/pelanggan/${c.customerId}`} className="flex justify-between gap-2 py-1">
+                  <span>{c.name}</span>
+                  <span className="tabular-nums"><b>{c.orderCount}x</b> <span className="text-sm text-muted">· {formatRupiah(c.total)}</span></span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {production}
     </>
   );
 }

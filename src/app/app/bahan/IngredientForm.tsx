@@ -69,7 +69,7 @@ export function IngredientForm({
   if (state.saved) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="card border-ok/30 bg-ok-bg font-semibold text-ok">✓ Tersimpan</p>
+        <p className="card border-brand-pistachio bg-ok-bg font-semibold text-ink">✓ Tersimpan</p>
         {state.saved.newlyOver.length > 0 ? (
           <div className="card border-bad/30">
             <p className="mb-2 font-bold text-bad">

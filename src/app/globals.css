@@ -1,16 +1,19 @@
 @import "tailwindcss";
+@import "./brand.css";
 
+/* Internal app colors, all mapped onto the brand palette in brand.css. */
 @theme {
-  --color-cream: #fbf7f1;
-  --color-crust: #f1e6d6;
-  --color-cocoa: #5a3a22;
-  --color-cocoa-dark: #3f2816;
-  --color-ink: #2b2118;
-  --color-muted: #7a6a5c;
-  --color-ok: #1f7a3d;
-  --color-ok-bg: #e3f4e8;
-  --color-bad: #b42318;
-  --color-bad-bg: #fde8e6;
+  --color-cream: var(--color-brand-cream);
+  --color-crust: var(--color-brand-butter);
+  --color-cocoa: var(--color-brand-espresso);
+  --color-cocoa-dark: color-mix(in srgb, var(--color-brand-espresso) 80%, black);
+  --color-ink: var(--color-brand-espresso);
+  --color-muted: var(--color-brand-muted);
+  /* HPP / status: pistachio = OK (under target), French wine = problem (over target). */
+  --color-ok: var(--color-brand-pistachio-deep);
+  --color-ok-bg: var(--color-brand-pistachio-soft); /* use text-ink on it */
+  --color-bad: var(--color-brand-wine);
+  --color-bad-bg: var(--color-brand-wine-soft);
 }
 
 :root {

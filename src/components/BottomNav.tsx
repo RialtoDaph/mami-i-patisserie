@@ -4,19 +4,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  { href: "/app", label: "Ringkasan", icon: "📊" },
-  { href: "/app/bahan", label: "Bahan", icon: "🧈" },
-  { href: "/app/resep", label: "Resep", icon: "📖" },
-  { href: "/app/paket", label: "Paket", icon: "🎁" },
+  { href: "/app", label: "Beranda", icon: "🏠", match: [] as string[] },
+  { href: "/app/order", label: "Order", icon: "🧾", match: ["/app/order"] },
+  { href: "/app/produksi", label: "Produksi", icon: "👩‍🍳", match: ["/app/produksi"] },
+  { href: "/app/costing", label: "Costing", icon: "📊", match: ["/app/costing", "/app/bahan", "/app/resep", "/app/paket"] },
+  {
+    href: "/app/lainnya",
+    label: "Lainnya",
+    icon: "☰",
+    match: ["/app/lainnya", "/app/produk", "/app/campaign", "/app/pelanggan", "/app/pengaturan"],
+  },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-black/10 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-      <ul className="mx-auto grid max-w-3xl grid-cols-4">
+      <ul className="mx-auto grid max-w-3xl grid-cols-5">
         {TABS.map((t) => {
-          const active = t.href === "/app" ? pathname === "/app" : pathname.startsWith(t.href);
+          const active = t.href === "/app" ? pathname === "/app" : t.match.some((m) => pathname.startsWith(m));
           return (
             <li key={t.href}>
               <Link

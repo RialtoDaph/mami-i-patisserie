@@ -89,9 +89,41 @@ Context for every Claude Code session working on this repository. Read this firs
 - `src/lib/costing/` — pure calculation functions + Vitest tests (`fixtures.ts` mirrors the seed).
 - `src/lib/data.ts` (server data loading), `src/lib/actions.ts` (server actions), `src/lib/permissions.ts`
   (UI-only mirror of RLS), `src/proxy.ts` (Next 16 "proxy" = middleware; guards `/app`).
-- Pages: `/app` summary, `/app/bahan`, `/app/resep`, `/app/paket`, `/app/ringkasan/export` (CSV), `/login`.
+- `src/lib/preorder/` — pure preorder logic + tests (capacity, payment/DP, validation, WhatsApp messages,
+  production schedule, dashboard, filters). SQL mirrors: `week_start`, `check_order_capacity`, `validate_order_rules`.
+- `src/lib/preorderData.ts` (loads all preorder data), `src/lib/preorderActions.ts`, `src/lib/upload.ts`
+  (client-side photo compress + Storage upload), `src/lib/errors.ts`.
+- Nav: Beranda `/app` (dashboard for owner/admin, production for others) · Order `/app/order` · Produksi
+  `/app/produksi` · Costing `/app/costing` (+ `/app/bahan`, `/app/resep`, `/app/paket`) · Lainnya `/app/lainnya`
+  (`/app/pelanggan`, `/app/produk`, `/app/campaign`, `/app/pengaturan`). CSV: `/app/costing/export`, `/app/order/export`.
+- Public site: route group `src/app/(site)` (`/`, `/katalog`, `/hampers`, `/kontak`, `/keranjang`), components in
+  `src/components/site`, logic in `src/lib/site` (cart, WhatsApp message, anon catalog loader), copy in
+  `src/content/site.ts`, brand tokens in `src/app/brand.css`. Pages use ISR (`revalidate = 300`).
+- Preorder data is loaded whole per request; revisit with pagination/server filters if orders grow to thousands.
 - Checks: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
 - PostgREST note: `recipes`↔`recipe_items` has two FKs, so embed with `recipe_items!recipe_items_recipe_id_fkey(...)`.
+
+## Environments
+
+- Supabase project "Mami i Patiserrie" (ref `mxkmavpebiawiknnbxam`, eu-west-1). Migrations
+  20260926000001–03, 20260927000001–02 (preorder) + full DUMMY seed applied on 2026-09-27.
+  20260927000003 (public site) applied on 2026-09-27.
+  New migrations: add a file in
+  `supabase/migrations/` AND apply it to this project (ask Alto first).
+- Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
+  Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key).
+- Users: altodaphino@gmail.com = owner (Alto). Nana/Mami accounts not created yet.
+
+## Pending reminders for Alto (remind at the end of each phase until done)
+
+1. Delete `SUPABASE_Secret_Key` (and unused `SUPABASE_Publishkey`) from Vercel env vars.
+2. Supabase Auth: turn off "Allow new users to sign up"; set Site URL to the Vercel URL.
+3. Create Nana (admin) and Mami (produksi) accounts, then set roles via SQL.
+4. Optional: Vercel Function Region → Dublin (dub1), close to Supabase eu-west-1.
+5. Optional: Supabase Auth → enable leaked password protection (security advisor warning).
+6. Replace DUMMY bank/QRIS/pickup data in Lainnya → Pengaturan before real orders.
+7. Website: provide the WhatsApp number, Instagram handle, delivery areas and final copy/palette; set
+   `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_INSTAGRAM`, `NEXT_PUBLIC_SITE_URL` in Vercel.
 
 ## Decisions log
 
@@ -120,6 +152,40 @@ Context for every Claude Code session working on this repository. Read this firs
 - 2026-09-26: Pack purchases: `purchase_qty` is the pack content in base units (e.g. 227 g).
   For kg/liter/pcs it is in purchase units. A new login has no role (and no access) until the owner sets one.
   When produksi duplicates a recipe, the copy gets no selling price and target 35%.
+
+- 2026-09-27: **Preorder module** plan approved ("gas dl aja yg mnrt km ok" = use Claude's recommendations):
+  1. `products` link to exactly one recipe or bundle, with `units_per_product` (e.g. risol frozen isi 10).
+  2. Product price is its own field. Campaigns may set `price_override` per product. Product HPP is shown from costing.
+  3. Capacity is weekly per product, Mon–Sun (Asia/Jakarta), based on fulfill date. Non-cancelled orders count.
+     Bundles do NOT consume their components' capacity. Hard block when full; owner raises capacity instead.
+  4. Production date = fulfill date. The schedule also expands bundles into recipes and sub-recipes.
+  5. DP default 50% (global setting), overridable per campaign and per order. The suggested DP rounds up to Rp 1.000.
+  6. Shipping fee & discount are manual per order: total = subtotal + shipping − discount.
+  7. Multiple payments per order, each with its own proof photo. When paid ≥ DP and status is baru/menunggu_dp,
+     status auto-advances to dp_diterima. Other status changes are manual.
+  8. produksi can create/edit orders, customers and payments, and cancel via status (no deletes). Products,
+     campaigns and settings are read-only for produksi. The revenue dashboard is owner/admin only. manager is read-only.
+  9. `show_on_website` is stored only; the public catalog/checkout comes in the website phase.
+  10. Order number `MIP-0001` (global sequence).
+  11. Bank/QRIS details live in a single-row `settings` table, editable by owner/admin (seed = DUMMY placeholders).
+- 2026-09-27: **Public website v1** plan approved ("setuju semua"):
+  1. New `products.web_category`: kue_kering, frozen, kue_basah, pastry, minuman, hampers (set in the Produk form).
+  2. "Kuota minggu ini penuh" = current Mon–Sun week (Asia/Jakarta). The add button stays enabled; admin sets the date.
+  3. WhatsApp order message: items, qty, total, desired date, optional name, ambil/kirim, and a note
+     that the final price & shipping are confirmed by admin.
+  4. Items added from the Hampers page use the campaign price, and the campaign name goes in the message.
+  5. DUMMY products are hidden on the public site unless `NEXT_PUBLIC_SHOW_DUMMY=1` (for previews).
+  6. Contact/story copy lives in `src/content/site.ts`, with PLACEHOLDERs clearly marked until Alto/Nana provide it.
+     WhatsApp number via `NEXT_PUBLIC_WHATSAPP_NUMBER`, Instagram via `NEXT_PUBLIC_INSTAGRAM`, and site URL via `NEXT_PUBLIC_SITE_URL`.
+  7. Fonts: EB Garamond (headings; replaced Cormorant Garamond, whose packaged "â" renders misplaced) + Inter (body) via next/font.
+  8. Public data only through read-only SECURITY DEFINER RPCs (`public_catalog`, `public_campaigns`) granted to anon;
+     base tables stay closed to anon. Brand colors live in `src/app/brand.css` (see palette decision below).
+- 2026-09-27: **Brand palette final** (from Alto/Nana), priority order: 1. Butter yellow `#F5E8AA` (~60%),
+  2. Espresso `#3E2723` (~25%), 3. Pistachio `#A2A672` (Pantone 5777 C, sampled; ~10%), 4. French wine `#AA1945`
+  (~5%, CTAs/alerts only). Only these four colors are allowed, on the website AND the internal app (globals.css maps
+  onto brand.css). Tints/shades are derived with color-mix. Text on pistachio fills is always espresso (butter on
+  pistachio fails contrast). HPP/status: under target = pistachio fill, over target = wine fill.
+- NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

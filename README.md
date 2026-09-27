@@ -2,9 +2,13 @@
 
 Satu aplikasi untuk:
 
-- **Website publik** di `/` (sementara masih halaman sederhana)
-- **Aplikasi internal** di `/app` (wajib login). Tahap ini berisi **modul costing resep**:
-  bahan & kemasan, resep (termasuk sub-resep), paket/hampers, ringkasan HPP, dan export CSV.
+- **Website publik** di `/`: beranda, katalog (`/katalog`), hampers (`/hampers`), kontak (`/kontak`), dan
+  keranjang (`/keranjang`). Order dikirim lewat WhatsApp, tanpa checkout atau payment gateway.
+- **Aplikasi internal** di `/app` (wajib login), berisi:
+  - **Preorder**: order dari WhatsApp, pelanggan, kapasitas mingguan, jadwal produksi, pembayaran/DP,
+    campaign musiman (mis. Lebaran 2027), dashboard owner, dan export CSV.
+  - **Costing resep**: bahan & kemasan, resep (termasuk sub-resep), paket/hampers, ringkasan HPP,
+    dan export CSV.
 
 > Kasir dan stok transaksi **tidak** dibuat di sini. Semua itu nanti ditangani Majoo.
 
@@ -24,6 +28,11 @@ Row Level Security), deploy ke Vercel.
      1. `supabase/migrations/20260926000001_roles_profiles.sql`
      2. `supabase/migrations/20260926000002_costing_schema.sql`
      3. `supabase/migrations/20260926000003_rls_and_rpc.sql`
+     4. `supabase/migrations/20260927000001_preorder_schema.sql`
+     5. `supabase/migrations/20260927000002_preorder_rls_rpc.sql`
+     6. `supabase/migrations/20260927000003_public_site.sql`
+   - Migration no. 5 juga membuat dua tempat penyimpanan foto (Storage):
+     `product-photos` (foto produk, bisa dilihat publik) dan `payment-proofs` (bukti bayar, **privat**).
    - *Alternatif untuk yang terbiasa pakai terminal:* `npx supabase link` lalu `npx supabase db push`.
 3. (Opsional) Isi **data contoh DUMMY**: jalankan `supabase/seed.sql` di SQL Editor.
    Semua data contoh namanya diawali `[DUMMY]` dan harganya **karangan**.
@@ -51,7 +60,7 @@ Row Level Security), deploy ke Vercel.
 |---|---|
 | `owner` (Alto) | Semua |
 | `admin` (Nana) | Semua |
-| `produksi` (Mami) | Lihat semua; tambah & ubah bahan dan resep. **Tidak bisa** menghapus, mengubah harga jual/target HPP, atau mengubah paket. |
+| `produksi` (Mami) | Lihat semua; tambah & ubah bahan, resep, order, pelanggan; catat pembayaran. **Tidak bisa** menghapus, mengubah harga jual/target HPP, mengubah paket/produk/campaign/pengaturan, atau melihat dashboard omzet. Order dibatalkan lewat status "Batal". |
 | `manager` | Hanya lihat (disiapkan untuk manajer outlet nanti) |
 
 Aturan ini dijaga langsung oleh database (Row Level Security + trigger), jadi tetap aman
@@ -66,6 +75,17 @@ Salin `.env.example` menjadi `.env.local`, lalu isi dari **Supabase → Project 
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...   # "anon public" / "publishable" key
 ```
+
+Untuk website publik (lihat `.env.example`):
+
+```
+NEXT_PUBLIC_SITE_URL=https://alamat-website-anda
+NEXT_PUBLIC_WHATSAPP_NUMBER=0812xxxxxxxx   # nomor WA untuk order
+NEXT_PUBLIC_INSTAGRAM=namaakun             # tanpa @
+NEXT_PUBLIC_SHOW_DUMMY=                    # isi 1 hanya di Preview untuk menampilkan produk DUMMY
+```
+
+Selama `NEXT_PUBLIC_WHATSAPP_NUMBER` kosong, tombol WhatsApp di website disembunyikan.
 
 `.env.local` **tidak** ikut masuk ke Git. Jangan pernah memakai atau commit `service_role` key.
 
@@ -117,6 +137,51 @@ Perintah lain:
   **merah** = di atas target). Ada pilihan harga + PBJT 10%, pembulatan saran harga ke
   Rp 500 / Rp 1.000, dan **Export CSV**.
 
+### Website publik
+
+- Produk tampil di website kalau di **Lainnya → Produk** dicentang **Tampil di website** dan **Aktif**.
+  Kategori di website dipilih di kolom **Kategori di website**.
+- Label **"Kuota minggu ini penuh"** muncul otomatis kalau kapasitas minggu berjalan (Senin–Minggu) sudah habis.
+- Halaman **Hampers** menampilkan campaign aktif (sedang buka atau akan buka) dengan harga khusus campaign.
+  Produk dari campaign yang belum buka bisa dilihat, tapi belum bisa masuk keranjang.
+- Keranjang disimpan di browser pembeli. Tombol **Pesan via WhatsApp** membuka WhatsApp dengan pesan berisi
+  daftar item, jumlah, total, tanggal, dan cara pengambilan. Admin lalu input order di aplikasi.
+- Data website diperbarui paling lambat **5 menit** setelah ada perubahan di aplikasi.
+- **Warna brand** (butter yellow, espresso, pistachio, French wine) ada di `src/app/brand.css` dan dipakai
+  di website maupun aplikasi. Ubah di sana kalau ada penyesuaian. **Mengganti teks** (cerita, area kirim,
+  dll.): `src/content/site.ts`. Semua yang bertanda `PLACEHOLDER` perlu dikonfirmasi.
+- Pengunjung hanya bisa membaca data lewat 2 fungsi khusus (`public_catalog`, `public_campaigns`).
+  Data order dan pelanggan tetap tertutup.
+
+### Preorder
+
+Navigasi bawah: **Beranda · Order · Produksi · Costing · Lainnya**.
+
+- **Beranda**: owner/admin melihat dashboard (total order, omzet, belum lunas, DP belum masuk,
+  produk terlaris, pelanggan order ulang), dan bisa difilter per campaign. Mami melihat produksi hari ini,
+  besok, dan order 3 hari ke depan.
+- **Order baru** (3 bagian, lalu Simpan):
+  1. **Pelanggan**: ketik nomor WhatsApp. Pelanggan lama langsung dikenali, dan nama/alamatnya terisi otomatis.
+  2. **Produk & tanggal**: pilih campaign (kalau ada), tanggal ambil/kirim, dan jumlah per produk.
+     Sisa kuota minggu itu terlihat. Kalau kuota habis muncul **PENUH** dan tombol + terkunci.
+  3. **Kirim & bayar**: ambil sendiri / kirim instan / ekspedisi, ongkir, diskon, dan DP (saran otomatis, bisa diubah).
+
+  Setelah disimpan muncul tombol **Kirim konfirmasi WhatsApp**.
+- **Detail order**:
+  - Catat pembayaran (DP/pelunasan) dengan foto bukti. Begitu DP terpenuhi, status otomatis jadi "DP diterima".
+  - Tombol "Tandai: …" untuk status berikutnya.
+  - 4 pesan WhatsApp siap kirim: konfirmasi, pengingat pelunasan, siap diambil/dikirim, dan sudah dikirim.
+- **Produksi**: total per produk per tanggal ambil/kirim. "Kebutuhan resep" menguraikan paket ke resep
+  dan resep ke sub-resep, termasuk jumlah batch.
+- **Lainnya → Produk**: produk jualan dibuat dari resep atau paket, misalnya "Risol frozen isi 10" = 10 × resep risol.
+  Isi harga, kapasitas per minggu (Senin–Minggu), lead time, foto, dan tanda tampil di website.
+- **Lainnya → Campaign**: tanggal buka/tutup preorder, rentang tanggal ambil/kirim, DP %, produk yang termasuk,
+  dan harga khusus.
+- **Lainnya → Pengaturan**: rekening, QRIS, dan alamat ambil. Semua data ini muncul otomatis di pesan WhatsApp.
+
+Aturan kapasitas, lead time, dan jendela campaign juga dijaga oleh database. Jadi walaupun Mami dan Nana
+input order bersamaan, kuota tidak bisa kelebihan.
+
 ### Rumus
 
 - Biaya per pcs = biaya per batch ÷ (hasil × (1 − susut%))
@@ -124,3 +189,7 @@ Perintah lain:
 - Saran harga = biaya per pcs ÷ target HPP, dibulatkan **ke atas** ke Rp 500 / Rp 1.000
 - Margin kotor = harga jual − biaya per pcs
 - Harga + PBJT = harga jual × 1,1 (hanya untuk tampilan)
+- Total order = subtotal + ongkir − diskon
+- Saran DP = total × DP %, dibulatkan **ke atas** ke Rp 1.000
+- Kuota terpakai = jumlah produk di semua order yang tidak batal, dalam minggu Senin–Minggu yang sama
+  dengan tanggal ambil/kirim
