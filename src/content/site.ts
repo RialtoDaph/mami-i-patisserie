@@ -3,7 +3,10 @@
 export const site = {
   name: "Mami I Pâtisserie",
   city: "Bandung",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  // Explicit URL, else Vercel's production domain (system env, server-side), else local dev.
+  url:
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000"),
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "",
   /** Instagram handle without "@". */
   instagram: (process.env.NEXT_PUBLIC_INSTAGRAM || "").replace(/^@/, ""),
