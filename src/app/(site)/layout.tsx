@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${serif.variable} ${sans.variable} min-h-dvh bg-brand-cream font-body text-brand-oak-dark`}>
+    <div className={`${serif.variable} ${sans.variable} min-h-dvh bg-brand-cream font-body text-brand-espresso`}>
       <CartProvider>
         <SiteHeader />
         <main>{children}</main>

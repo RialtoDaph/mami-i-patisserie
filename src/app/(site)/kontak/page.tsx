@@ -20,7 +20,7 @@ export default function ContactPage() {
       <div className="mb-10 flex flex-col gap-3 sm:flex-row">
         <WhatsAppButton text={`Halo ${site.name}, saya mau tanya.`} label="Chat WhatsApp" className="btn-wine flex-1" />
         {ig && (
-          <a href={ig} target="_blank" rel="noopener noreferrer" className="btn-oak-outline flex-1">
+          <a href={ig} target="_blank" rel="noopener noreferrer" className="btn-outline flex-1">
             Instagram @{site.instagram}
           </a>
         )}
@@ -30,16 +30,16 @@ export default function ContactPage() {
       <h2 className="mb-4 font-display text-3xl font-semibold">Pengiriman & pengambilan</h2>
       <ul className="mb-10 grid gap-3">
         {site.delivery.map((d) => (
-          <li key={d.title} className="rounded-3xl bg-white/70 p-5 ring-1 ring-brand-oak/10">
-            <p className="font-semibold text-brand-oak-dark">{d.title}</p>
-            <p className="mt-1 text-brand-oak">{d.text}</p>
+          <li key={d.title} className="rounded-3xl bg-brand-butter-soft p-5 ring-1 ring-brand-espresso/10">
+            <p className="font-semibold text-brand-espresso">{d.title}</p>
+            <p className="mt-1 text-brand-muted">{d.text}</p>
           </li>
         ))}
       </ul>
 
       <div className="rounded-3xl bg-brand-butter p-6">
         <p className="font-display text-2xl font-semibold">{site.name} · {site.city}</p>
-        <p className="mt-1 text-brand-oak">{site.timeline}</p>
+        <p className="mt-1 text-brand-muted">{site.timeline}</p>
       </div>
     </div>
   );

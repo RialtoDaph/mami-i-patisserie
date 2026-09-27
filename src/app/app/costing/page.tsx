@@ -74,7 +74,7 @@ export default async function SummaryPage({
               <Link
                 href={r.kind === "recipe" ? `/app/resep/${r.id}` : `/app/paket/${r.id}`}
                 className={`card block border-l-4 ${
-                  r.status === "over" ? "border-l-bad" : r.status === "under" ? "border-l-ok" : "border-l-black/10"
+                  r.status === "over" ? "border-l-bad" : r.status === "under" ? "border-l-brand-pistachio" : "border-l-black/10"
                 }`}
               >
                 <div className="mb-2 flex items-start justify-between gap-3">

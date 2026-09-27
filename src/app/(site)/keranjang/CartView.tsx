@@ -23,7 +23,7 @@ export function CartView() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <h1 className="font-display text-4xl font-semibold">Keranjang masih kosong</h1>
-        <p className="mt-2 text-brand-oak">Yuk pilih kue favorit Anda dulu.</p>
+        <p className="mt-2 text-brand-muted">Yuk pilih kue favorit Anda dulu.</p>
         <Link href="/katalog" className="btn-wine mt-6">Lihat Menu</Link>
       </div>
     );
@@ -38,20 +38,20 @@ export function CartView() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="mb-6 font-display text-4xl font-semibold">Keranjang</h1>
 
-      <ul className="mb-6 flex flex-col divide-y divide-brand-oak/10 rounded-3xl bg-white/70 px-4 ring-1 ring-brand-oak/10">
+      <ul className="mb-6 flex flex-col divide-y divide-brand-espresso/10 rounded-3xl bg-brand-butter-soft px-4 ring-1 ring-brand-espresso/10">
         {cart.items.map((i) => {
           const key = lineKey(i);
           return (
             <li key={key} className="flex items-center gap-3 py-4">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold leading-tight">{i.name}</p>
-                {i.campaignName && <p className="text-xs font-semibold text-brand-pistachio">{i.campaignName}</p>}
-                <p className="text-sm text-brand-oak">{formatRupiah(i.unitPrice)} · <b>{formatRupiah(i.qty * i.unitPrice)}</b></p>
+                {i.campaignName && <p className="text-xs font-semibold text-brand-pistachio-deep">{i.campaignName}</p>}
+                <p className="text-sm text-brand-muted">{formatRupiah(i.unitPrice)} · <b>{formatRupiah(i.qty * i.unitPrice)}</b></p>
               </div>
-              <div className="flex items-center rounded-full border border-brand-oak/30 bg-white">
-                <button type="button" aria-label={`Kurangi ${i.name}`} onClick={() => cart.setQty(key, i.qty - 1)} className="size-11 text-xl font-bold text-brand-oak">−</button>
+              <div className="flex items-center rounded-full border border-brand-espresso/30 bg-brand-cream">
+                <button type="button" aria-label={`Kurangi ${i.name}`} onClick={() => cart.setQty(key, i.qty - 1)} className="size-11 text-xl font-bold text-brand-muted">−</button>
                 <span className="w-6 text-center font-semibold tabular-nums">{i.qty}</span>
-                <button type="button" aria-label={`Tambah ${i.name}`} onClick={() => cart.setQty(key, i.qty + 1)} className="size-11 text-xl font-bold text-brand-oak">+</button>
+                <button type="button" aria-label={`Tambah ${i.name}`} onClick={() => cart.setQty(key, i.qty + 1)} className="size-11 text-xl font-bold text-brand-muted">+</button>
               </div>
             </li>
           );
@@ -65,28 +65,28 @@ export function CartView() {
 
       <div className="mb-8 flex flex-col gap-4">
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-brand-oak">Tanggal diinginkan</span>
-          <input type="date" value={date} min={earliest} onChange={(e) => setDate(e.target.value)} className="min-h-12 w-full rounded-2xl border border-brand-oak/20 bg-white px-3" />
-          <span className="mt-1 block text-sm text-brand-oak/80">Paling cepat {formatDateId(earliest)}. Kosongkan kalau fleksibel.</span>
+          <span className="mb-1 block text-sm font-semibold text-brand-muted">Tanggal diinginkan</span>
+          <input type="date" value={date} min={earliest} onChange={(e) => setDate(e.target.value)} className="min-h-12 w-full rounded-2xl border border-brand-espresso/20 bg-brand-cream px-3" />
+          <span className="mt-1 block text-sm text-brand-muted">Paling cepat {formatDateId(earliest)}. Kosongkan kalau fleksibel.</span>
         </label>
         <div>
-          <span className="mb-1 block text-sm font-semibold text-brand-oak">Pengambilan</span>
+          <span className="mb-1 block text-sm font-semibold text-brand-muted">Pengambilan</span>
           <div className="grid grid-cols-2 gap-2">
             {(["ambil", "kirim"] as const).map((d) => (
               <button key={d} type="button" onClick={() => setDelivery(d)}
-                className={`min-h-12 rounded-full border font-semibold ${delivery === d ? "border-brand-oak bg-brand-oak text-brand-cream" : "border-brand-oak/30 bg-white text-brand-oak"}`}>
+                className={`min-h-12 rounded-full border font-semibold ${delivery === d ? "border-brand-espresso bg-brand-espresso text-brand-butter" : "border-brand-espresso/30 bg-brand-cream text-brand-muted"}`}>
                 {d === "ambil" ? "Ambil sendiri" : "Dikirim"}
               </button>
             ))}
           </div>
         </div>
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-brand-oak">Nama (opsional)</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" className="min-h-12 w-full rounded-2xl border border-brand-oak/20 bg-white px-3" />
+          <span className="mb-1 block text-sm font-semibold text-brand-muted">Nama (opsional)</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" className="min-h-12 w-full rounded-2xl border border-brand-espresso/20 bg-brand-cream px-3" />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-brand-oak">Catatan (opsional)</span>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full rounded-2xl border border-brand-oak/20 bg-white px-3 py-2" placeholder="mis. untuk hadiah, kartu ucapan…" />
+          <span className="mb-1 block text-sm font-semibold text-brand-muted">Catatan (opsional)</span>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full rounded-2xl border border-brand-espresso/20 bg-brand-cream px-3 py-2" placeholder="mis. untuk hadiah, kartu ucapan…" />
         </label>
       </div>
 
@@ -97,12 +97,12 @@ export function CartView() {
       ) : (
         <p className="rounded-2xl bg-brand-butter-soft p-4 text-sm">Nomor WhatsApp belum diatur (NEXT_PUBLIC_WHATSAPP_NUMBER).</p>
       )}
-      <p className="mt-3 text-center text-sm text-brand-oak/80">Harga final, ongkir, dan tanggal akan dikonfirmasi admin.</p>
+      <p className="mt-3 text-center text-sm text-brand-muted">Harga final, ongkir, dan tanggal akan dikonfirmasi admin.</p>
 
       {sent && (
         <div className="mt-6 rounded-3xl bg-brand-pistachio-soft p-5 text-center">
           <p className="font-semibold">Sudah terkirim ke WhatsApp?</p>
-          <button type="button" onClick={() => { cart.clear(); setSent(false); }} className="btn-oak-outline mt-3">Kosongkan keranjang</button>
+          <button type="button" onClick={() => { cart.clear(); setSent(false); }} className="btn-outline mt-3">Kosongkan keranjang</button>
         </div>
       )}
     </div>

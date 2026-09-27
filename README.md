@@ -147,7 +147,8 @@ Perintah lain:
 - Keranjang disimpan di browser pembeli. Tombol **Pesan via WhatsApp** membuka WhatsApp dengan pesan berisi
   daftar item, jumlah, total, tanggal, dan cara pengambilan. Admin lalu input order di aplikasi.
 - Data website diperbarui paling lambat **5 menit** setelah ada perubahan di aplikasi.
-- **Mengganti warna brand**: ubah nilai warna di `src/app/brand.css`. **Mengganti teks** (cerita, area kirim,
+- **Warna brand** (butter yellow, espresso, pistachio, French wine) ada di `src/app/brand.css` dan dipakai
+  di website maupun aplikasi. Ubah di sana kalau ada penyesuaian. **Mengganti teks** (cerita, area kirim,
   dll.): `src/content/site.ts`. Semua yang bertanda `PLACEHOLDER` perlu dikonfirmasi.
 - Pengunjung hanya bisa membaca data lewat 2 fungsi khusus (`public_catalog`, `public_campaigns`).
   Data order dan pelanggan tetap tertutup.

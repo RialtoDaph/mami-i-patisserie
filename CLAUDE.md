@@ -179,7 +179,12 @@ Context for every Claude Code session working on this repository. Read this firs
      WhatsApp number via `NEXT_PUBLIC_WHATSAPP_NUMBER`, Instagram via `NEXT_PUBLIC_INSTAGRAM`, and site URL via `NEXT_PUBLIC_SITE_URL`.
   7. Fonts: EB Garamond (headings; replaced Cormorant Garamond, whose packaged "â" renders misplaced) + Inter (body) via next/font.
   8. Public data only through read-only SECURITY DEFINER RPCs (`public_catalog`, `public_campaigns`) granted to anon;
-     base tables stay closed to anon. Brand colors are placeholder tokens in `src/app/brand.css`.
+     base tables stay closed to anon. Brand colors live in `src/app/brand.css` (see palette decision below).
+- 2026-09-27: **Brand palette final** (from Alto/Nana), priority order: 1. Butter yellow `#F5E8AA` (~60%),
+  2. Espresso `#3E2723` (~25%), 3. Pistachio `#A2A672` (Pantone 5777 C, sampled; ~10%), 4. French wine `#AA1945`
+  (~5%, CTAs/alerts only). Only these four colors are allowed, on the website AND the internal app (globals.css maps
+  onto brand.css). Tints/shades are derived with color-mix. Text on pistachio fills is always espresso (butter on
+  pistachio fails contrast). HPP/status: under target = pistachio fill, over target = wine fill.
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->

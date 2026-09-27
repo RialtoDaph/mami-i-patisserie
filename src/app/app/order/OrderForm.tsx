@@ -156,7 +156,7 @@ export function OrderForm({ products, campaigns, customers, orders, settings, to
           <input value={wa} onChange={(e) => onWaChange(e.target.value)} inputMode="tel" autoComplete="off" placeholder="0812-3456-7890" className="input" />
         </label>
         {match && (
-          <p className="rounded-xl bg-ok-bg px-3 py-2 text-sm font-semibold text-ok">
+          <p className="rounded-xl bg-ok-bg px-3 py-2 text-sm font-semibold text-ink">
             ✓ Pelanggan terdaftar
             {match.orderCount > 0 && ` · ini order ke-${match.orderCount + (init ? 0 : 1)}`}
             {match.orderCount >= (init ? 2 : 1) && " · Pelanggan lama"}

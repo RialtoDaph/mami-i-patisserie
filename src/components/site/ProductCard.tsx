@@ -7,7 +7,7 @@ export function ProductPhoto({ url, name, priority = false }: { url: string | nu
   if (!url) {
     return (
       <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-brand-butter-soft">
-        <span className="font-display text-5xl text-brand-oak/40" aria-hidden>MI</span>
+        <span className="font-display text-5xl text-brand-espresso/40" aria-hidden>MI</span>
       </div>
     );
   }
@@ -39,25 +39,25 @@ export function ProductCard({
   unavailableLabel?: string | null;
 }) {
   return (
-    <article className="flex flex-col gap-2 rounded-3xl bg-white/70 p-2.5 shadow-sm ring-1 ring-brand-oak/10">
+    <article className="flex flex-col gap-2 rounded-3xl bg-brand-butter-soft p-2.5 shadow-sm ring-1 ring-brand-espresso/10">
       <div className="relative">
         <ProductPhoto url={product.photoUrl} name={product.name} priority={priority} />
         {product.fullThisWeek && (
-          <span className="absolute top-2 left-2 rounded-full bg-brand-wine px-2.5 py-1 text-[11px] font-bold text-brand-cream">
+          <span className="absolute top-2 left-2 rounded-full bg-brand-wine px-2.5 py-1 text-[11px] font-bold text-brand-butter">
             Kuota minggu ini penuh
           </span>
         )}
       </div>
       <div className="flex flex-1 flex-col px-1">
-        <h3 className="font-display text-xl font-semibold leading-tight text-brand-oak-dark">{product.name}</h3>
-        {product.description && <p className="mt-1 line-clamp-2 text-sm text-brand-oak/80">{product.description}</p>}
-        <p className="mt-auto pt-2 font-semibold text-brand-oak-dark">
+        <h3 className="font-display text-xl font-semibold leading-tight text-brand-espresso">{product.name}</h3>
+        {product.description && <p className="mt-1 line-clamp-2 text-sm text-brand-muted">{product.description}</p>}
+        <p className="mt-auto pt-2 font-semibold text-brand-espresso">
           {formatRupiah(price)}
-          {price !== product.price && <span className="ml-2 text-xs font-normal text-brand-oak/60 line-through">{formatRupiah(product.price)}</span>}
+          {price !== product.price && <span className="ml-2 text-xs font-normal text-brand-muted line-through">{formatRupiah(product.price)}</span>}
         </p>
       </div>
       {unavailableLabel ? (
-        <p className="flex min-h-11 items-center justify-center rounded-full bg-brand-pistachio-soft px-3 text-center text-sm font-semibold text-brand-oak">
+        <p className="flex min-h-11 items-center justify-center rounded-full bg-brand-pistachio-soft px-3 text-center text-sm font-semibold text-brand-muted">
           {unavailableLabel}
         </p>
       ) : (

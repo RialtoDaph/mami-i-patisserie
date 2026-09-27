@@ -17,10 +17,10 @@ export function AddToCartButton({ item }: { item: Omit<CartItem, "qty"> }) {
     );
   }
   return (
-    <div className="flex min-h-11 w-full items-center justify-between rounded-full border border-brand-oak/40 bg-white">
-      <button type="button" aria-label={`Kurangi ${item.name}`} onClick={() => cart.setQty(key, qty - 1)} className="size-11 text-xl font-bold text-brand-oak">−</button>
-      <span className="font-semibold tabular-nums text-brand-oak-dark" aria-live="polite">{qty}</span>
-      <button type="button" aria-label={`Tambah ${item.name}`} onClick={() => cart.setQty(key, qty + 1)} className="size-11 text-xl font-bold text-brand-oak">+</button>
+    <div className="flex min-h-11 w-full items-center justify-between rounded-full border border-brand-espresso/40 bg-brand-cream">
+      <button type="button" aria-label={`Kurangi ${item.name}`} onClick={() => cart.setQty(key, qty - 1)} className="size-11 text-xl font-bold text-brand-muted">−</button>
+      <span className="font-semibold tabular-nums text-brand-espresso" aria-live="polite">{qty}</span>
+      <button type="button" aria-label={`Tambah ${item.name}`} onClick={() => cart.setQty(key, qty + 1)} className="size-11 text-xl font-bold text-brand-muted">+</button>
     </div>
   );
 }

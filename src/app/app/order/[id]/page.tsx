@@ -47,8 +47,8 @@ export default async function OrderDetailPage({
       <PageHeader title={order.orderNo} back="/app/order" action={<StatusBadge status={order.status} />} />
 
       {baru && (
-        <div className="card mb-4 border-ok/40 bg-ok-bg">
-          <p className="mb-3 font-bold text-ok">✓ Order tersimpan. Kirim konfirmasi ke pelanggan:</p>
+        <div className="card mb-4 border-brand-pistachio bg-ok-bg">
+          <p className="mb-3 font-bold text-ink">✓ Order tersimpan. Kirim konfirmasi ke pelanggan:</p>
           <WaButton href={waLink(customer.whatsapp, confirmationMessage(ctx))} label="Kirim konfirmasi WhatsApp" />
         </div>
       )}
@@ -67,7 +67,7 @@ export default async function OrderDetailPage({
           <Row label="Metode" value={FULFILL_LABEL[order.fulfillMethod]} />
           {order.deliveryAddress && <p className="py-1 text-sm">{order.deliveryAddress}</p>}
           {campaign && <Row label="Campaign" value={campaign.name} />}
-          {order.notes && <p className="mt-1 rounded-lg bg-amber-50 px-3 py-2 text-sm">📝 {order.notes}</p>}
+          {order.notes && <p className="mt-1 rounded-lg bg-brand-butter-soft px-3 py-2 text-sm">📝 {order.notes}</p>}
         </div>
       </section>
 
