@@ -102,6 +102,13 @@ Context for every Claude Code session working on this repository. Read this firs
   Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key).
 - Users: altodaphino@gmail.com = owner (Alto). Nana/Mami accounts not created yet.
 
+## Pending reminders for Alto (remind at the end of each phase until done)
+
+1. Delete `SUPABASE_Secret_Key` (and unused `SUPABASE_Publishkey`) from Vercel env vars.
+2. Supabase Auth: turn off "Allow new users to sign up"; set Site URL to the Vercel URL.
+3. Create Nana (admin) and Mami (produksi) accounts, then set roles via SQL.
+4. Optional: Vercel Function Region → Dublin (dub1), close to Supabase eu-west-1.
+
 ## Decisions log
 
 <!-- Append confirmed decisions here, with date. -->
