@@ -5,32 +5,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
 import { loadCostingData } from "./data";
 import { parseNumberInput } from "./format";
+import { friendlyError } from "./errors";
 import { baseUnitsFor, priceImpact, type BaseUnit, type Ingredient, type ItemUnit, type PurchaseUnit, type RecipeCategory, type YieldUnit } from "./costing";
 
 export interface ActionResult {
   error?: string;
-}
-
-interface PgError {
-  code?: string;
-  message: string;
-}
-
-/** Turns a Postgres/PostgREST error into a message Mami can understand. */
-function friendlyError(e: PgError): string {
-  switch (e.code) {
-    case "23503":
-      return "Data ini masih dipakai di resep atau paket, jadi tidak bisa dihapus.";
-    case "42501":
-      return e.message.startsWith("Role") ? e.message : "Anda tidak punya akses untuk aksi ini.";
-    case "23514":
-      // Our own trigger messages are already in Indonesian.
-      return /^[A-Z][a-z]/.test(e.message) && !e.message.includes("violates") ? e.message : "Isian tidak valid. Periksa lagi angkanya.";
-    case "P0001":
-      return e.message;
-    default:
-      return `Gagal menyimpan: ${e.message}`;
-  }
 }
 
 function refresh() {

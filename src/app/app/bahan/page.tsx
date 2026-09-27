@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { CostingTabs } from "@/components/CostingTabs";
 import { loadCostingData, getCurrentUser } from "@/lib/data";
 import { can } from "@/lib/permissions";
 import { pricePerBaseUnit } from "@/lib/costing";
@@ -25,6 +26,7 @@ export default async function IngredientsPage() {
 
   return (
     <>
+      <CostingTabs active="/app/bahan" />
       <PageHeader
         title="Bahan & Kemasan"
         action={

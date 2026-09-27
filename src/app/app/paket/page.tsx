@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { CostingTabs } from "@/components/CostingTabs";
 import { buildSummary } from "@/lib/costing";
 import { getCurrentUser, loadCostingData } from "@/lib/data";
 import { can } from "@/lib/permissions";
@@ -17,6 +18,7 @@ export default async function BundlesPage() {
   );
   return (
     <>
+      <CostingTabs active="/app/paket" />
       <PageHeader
         title="Paket & Hampers"
         action={can(user.role, "bundle.edit") ? <Link href="/app/paket/baru" className="btn-primary px-4">+ Paket</Link> : null}

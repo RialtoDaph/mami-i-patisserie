@@ -43,7 +43,7 @@ export function Row({ label, value, strong }: { label: string; value: React.Reac
   return (
     <div className="flex items-baseline justify-between gap-3 py-1">
       <span className="text-sm text-muted">{label}</span>
-      <span className={`text-right tabular-nums ${strong ? "text-lg font-bold" : "font-semibold"}`}>{value}</span>
+      <span className={`whitespace-nowrap text-right tabular-nums ${strong ? "text-lg font-bold" : "font-semibold"}`}>{value}</span>
     </div>
   );
 }
