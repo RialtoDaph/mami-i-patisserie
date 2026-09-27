@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #fbf7f1;
+  --color-crust: #f1e6d6;
+  --color-cocoa: #5a3a22;
+  --color-cocoa-dark: #3f2816;
+  --color-ink: #2b2118;
+  --color-muted: #7a6a5c;
+  --color-ok: #1f7a3d;
+  --color-ok-bg: #e3f4e8;
+  --color-bad: #b42318;
+  --color-bad-bg: #fde8e6;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@utility btn {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-base font-semibold transition active:scale-[0.98] disabled:opacity-50;
+}
+
+@utility btn-primary {
+    @apply btn bg-cocoa text-white hover:bg-cocoa-dark;
+}
+
+@utility btn-secondary {
+    @apply btn border border-cocoa/30 bg-white text-cocoa hover:bg-crust;
+}
+
+@utility btn-danger {
+    @apply btn border border-bad/40 bg-white text-bad hover:bg-bad-bg;
+}
+
+@utility card {
+    @apply rounded-2xl border border-black/5 bg-white p-4 shadow-sm;
+}
+
+@utility field-label {
+    @apply mb-1 block text-sm font-semibold text-muted;
+}
+
+@utility input {
+    @apply block min-h-12 w-full rounded-xl border border-black/15 bg-white px-3 text-base text-ink outline-none focus:border-cocoa focus:ring-2 focus:ring-cocoa/20;
+}
+
+@utility chip {
+    @apply inline-flex min-h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold;
+}
+
+@utility chip-on {
+    @apply chip border-cocoa bg-cocoa text-white;
+}
+
+@utility chip-off {
+    @apply chip border-black/15 bg-white text-ink;
+}
