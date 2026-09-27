@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
 import { friendlyError } from "./errors";
 import type { ActionResult } from "./actions";
+import { WEB_CATEGORIES, type WebCategory } from "@/content/site";
 import { normalizeWhatsapp, type FulfillMethod, type OrderStatus, type PaymentMethod } from "./preorder";
 
 function refresh() {
@@ -158,6 +159,7 @@ export interface ProductInput {
   showOnWebsite: boolean;
   isActive: boolean;
   photoPath: string | null;
+  webCategory: WebCategory;
 }
 
 export async function saveProduct(input: ProductInput): Promise<ActionResult> {
@@ -183,6 +185,7 @@ export async function saveProduct(input: ProductInput): Promise<ActionResult> {
     show_on_website: input.showOnWebsite,
     is_active: input.isActive,
     photo_path: input.photoPath,
+    web_category: WEB_CATEGORIES.includes(input.webCategory) ? input.webCategory : "kue_basah",
   };
   const supabase = await createClient();
   const res = input.id

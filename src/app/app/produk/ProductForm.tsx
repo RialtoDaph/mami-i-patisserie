@@ -6,6 +6,7 @@ import { uploadPhoto } from "@/lib/upload";
 import { hppPct, hppStatus, DEFAULT_TARGET_HPP_PCT } from "@/lib/costing";
 import { formatNumber, formatRupiah, parseNumberInput } from "@/lib/format";
 import type { Product } from "@/lib/preorder";
+import { WEB_CATEGORIES, WEB_CATEGORY_LABEL, type WebCategory } from "@/content/site";
 import { ConfirmActionButton } from "@/components/ConfirmActionButton";
 import { ErrorBox, HppBadge, Row } from "@/components/ui";
 import { ProductThumb } from "@/components/preorder";
@@ -24,7 +25,7 @@ export function ProductForm({
   costs,
   canEdit,
 }: {
-  initial: Product | null;
+  initial: (Product & { webCategory: WebCategory }) | null;
   photoUrl: string | null;
   sources: SourceOption[];
   costs: Record<string, number | null>;
@@ -40,6 +41,7 @@ export function ProductForm({
   const [preorder, setPreorder] = useState(initial?.preorderEnabled ?? true);
   const [website, setWebsite] = useState(initial?.showOnWebsite ?? false);
   const [active, setActive] = useState(initial?.isActive ?? true);
+  const [webCategory, setWebCategory] = useState<WebCategory>(initial?.webCategory ?? "kue_basah");
   const [photoPath, setPhotoPath] = useState(initial?.photoPath ?? null);
   const [preview, setPreview] = useState(photoUrl);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +88,7 @@ export function ProductForm({
         showOnWebsite: website,
         isActive: active,
         photoPath,
+        webCategory,
       });
       if (res?.error) setError(res.error);
     });
@@ -143,6 +146,12 @@ export function ProductForm({
           <label><span className="field-label">Kapasitas / minggu</span><input value={capacity} onChange={(e) => setCapacity(e.target.value)} inputMode="numeric" className="input" placeholder="kosong = tanpa batas" /></label>
           <label><span className="field-label">Lead time (hari)</span><input value={lead} onChange={(e) => setLead(e.target.value)} inputMode="numeric" className="input" /></label>
         </div>
+        <label>
+          <span className="field-label">Kategori di website</span>
+          <select value={webCategory} onChange={(e) => setWebCategory(e.target.value as WebCategory)} className="input">
+            {WEB_CATEGORIES.map((c) => <option key={c} value={c}>{WEB_CATEGORY_LABEL[c]}</option>)}
+          </select>
+        </label>
         {toggle("Bisa dipreorder", preorder, setPreorder)}
         {toggle("Tampil di website", website, setWebsite)}
         {toggle("Aktif", active, setActive)}

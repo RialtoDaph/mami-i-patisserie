@@ -96,6 +96,9 @@ Context for every Claude Code session working on this repository. Read this firs
 - Nav: Beranda `/app` (dashboard for owner/admin, production for others) · Order `/app/order` · Produksi
   `/app/produksi` · Costing `/app/costing` (+ `/app/bahan`, `/app/resep`, `/app/paket`) · Lainnya `/app/lainnya`
   (`/app/pelanggan`, `/app/produk`, `/app/campaign`, `/app/pengaturan`). CSV: `/app/costing/export`, `/app/order/export`.
+- Public site: route group `src/app/(site)` (`/`, `/katalog`, `/hampers`, `/kontak`, `/keranjang`), components in
+  `src/components/site`, logic in `src/lib/site` (cart, WhatsApp message, anon catalog loader), copy in
+  `src/content/site.ts`, brand tokens in `src/app/brand.css`. Pages use ISR (`revalidate = 300`).
 - Preorder data is loaded whole per request; revisit with pagination/server filters if orders grow to thousands.
 - Checks: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
 - PostgREST note: `recipes`↔`recipe_items` has two FKs, so embed with `recipe_items!recipe_items_recipe_id_fkey(...)`.
@@ -104,6 +107,7 @@ Context for every Claude Code session working on this repository. Read this firs
 
 - Supabase project "Mami i Patiserrie" (ref `mxkmavpebiawiknnbxam`, eu-west-1). Migrations
   20260926000001–03, 20260927000001–02 (preorder) + full DUMMY seed applied on 2026-09-27.
+  20260927000003 (public site) NOT applied yet.
   New migrations: add a file in
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
@@ -118,6 +122,8 @@ Context for every Claude Code session working on this repository. Read this firs
 4. Optional: Vercel Function Region → Dublin (dub1), close to Supabase eu-west-1.
 5. Optional: Supabase Auth → enable leaked password protection (security advisor warning).
 6. Replace DUMMY bank/QRIS/pickup data in Lainnya → Pengaturan before real orders.
+7. Website: provide the WhatsApp number, Instagram handle, delivery areas and final copy/palette; set
+   `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_INSTAGRAM`, `NEXT_PUBLIC_SITE_URL` in Vercel.
 
 ## Decisions log
 
@@ -171,7 +177,7 @@ Context for every Claude Code session working on this repository. Read this firs
   5. DUMMY products are hidden on the public site unless `NEXT_PUBLIC_SHOW_DUMMY=1` (for previews).
   6. Contact/story copy lives in `src/content/site.ts`, with PLACEHOLDERs clearly marked until Alto/Nana provide it.
      WhatsApp number via `NEXT_PUBLIC_WHATSAPP_NUMBER`, Instagram via `NEXT_PUBLIC_INSTAGRAM`, and site URL via `NEXT_PUBLIC_SITE_URL`.
-  7. Fonts: Cormorant Garamond (headings) + Inter (body) via next/font.
+  7. Fonts: EB Garamond (headings; replaced Cormorant Garamond, whose packaged "â" renders misplaced) + Inter (body) via next/font.
   8. Public data only through read-only SECURITY DEFINER RPCs (`public_catalog`, `public_campaigns`) granted to anon;
      base tables stay closed to anon. Brand colors are placeholder tokens in `src/app/brand.css`.
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.

@@ -2,7 +2,8 @@
 
 Satu aplikasi untuk:
 
-- **Website publik** di `/` (sementara masih halaman sederhana)
+- **Website publik** di `/`: beranda, katalog (`/katalog`), hampers (`/hampers`), kontak (`/kontak`), dan
+  keranjang (`/keranjang`). Order dikirim lewat WhatsApp, tanpa checkout atau payment gateway.
 - **Aplikasi internal** di `/app` (wajib login), berisi:
   - **Preorder**: order dari WhatsApp, pelanggan, kapasitas mingguan, jadwal produksi, pembayaran/DP,
     campaign musiman (mis. Lebaran 2027), dashboard owner, dan export CSV.
@@ -29,6 +30,7 @@ Row Level Security), deploy ke Vercel.
      3. `supabase/migrations/20260926000003_rls_and_rpc.sql`
      4. `supabase/migrations/20260927000001_preorder_schema.sql`
      5. `supabase/migrations/20260927000002_preorder_rls_rpc.sql`
+     6. `supabase/migrations/20260927000003_public_site.sql`
    - Migration no. 5 juga membuat dua tempat penyimpanan foto (Storage):
      `product-photos` (foto produk, bisa dilihat publik) dan `payment-proofs` (bukti bayar, **privat**).
    - *Alternatif untuk yang terbiasa pakai terminal:* `npx supabase link` lalu `npx supabase db push`.
@@ -73,6 +75,17 @@ Salin `.env.example` menjadi `.env.local`, lalu isi dari **Supabase → Project 
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...   # "anon public" / "publishable" key
 ```
+
+Untuk website publik (lihat `.env.example`):
+
+```
+NEXT_PUBLIC_SITE_URL=https://alamat-website-anda
+NEXT_PUBLIC_WHATSAPP_NUMBER=0812xxxxxxxx   # nomor WA untuk order
+NEXT_PUBLIC_INSTAGRAM=namaakun             # tanpa @
+NEXT_PUBLIC_SHOW_DUMMY=                    # isi 1 hanya di Preview untuk menampilkan produk DUMMY
+```
+
+Selama `NEXT_PUBLIC_WHATSAPP_NUMBER` kosong, tombol WhatsApp di website disembunyikan.
 
 `.env.local` **tidak** ikut masuk ke Git. Jangan pernah memakai atau commit `service_role` key.
 
@@ -123,6 +136,21 @@ Perintah lain:
 - **Ringkasan**: semua produk aktif dengan HPP berwarna (**hijau** = sesuai target,
   **merah** = di atas target). Ada pilihan harga + PBJT 10%, pembulatan saran harga ke
   Rp 500 / Rp 1.000, dan **Export CSV**.
+
+### Website publik
+
+- Produk tampil di website kalau di **Lainnya → Produk** dicentang **Tampil di website** dan **Aktif**.
+  Kategori di website dipilih di kolom **Kategori di website**.
+- Label **"Kuota minggu ini penuh"** muncul otomatis kalau kapasitas minggu berjalan (Senin–Minggu) sudah habis.
+- Halaman **Hampers** menampilkan campaign aktif (sedang buka atau akan buka) dengan harga khusus campaign.
+  Produk dari campaign yang belum buka bisa dilihat, tapi belum bisa masuk keranjang.
+- Keranjang disimpan di browser pembeli. Tombol **Pesan via WhatsApp** membuka WhatsApp dengan pesan berisi
+  daftar item, jumlah, total, tanggal, dan cara pengambilan. Admin lalu input order di aplikasi.
+- Data website diperbarui paling lambat **5 menit** setelah ada perubahan di aplikasi.
+- **Mengganti warna brand**: ubah nilai warna di `src/app/brand.css`. **Mengganti teks** (cerita, area kirim,
+  dll.): `src/content/site.ts`. Semua yang bertanda `PLACEHOLDER` perlu dikonfirmasi.
+- Pengunjung hanya bisa membaca data lewat 2 fungsi khusus (`public_catalog`, `public_campaigns`).
+  Data order dan pelanggan tetap tertutup.
 
 ### Preorder
 

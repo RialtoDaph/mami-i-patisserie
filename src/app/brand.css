@@ -1,0 +1,35 @@
+/*
+ * Mami I Pâtisserie — BRAND DESIGN TOKENS (public website).
+ * PLACEHOLDER colors until Nana delivers the final palette: change the hex values here only.
+ * Intended proportion: ~60% butter + cream, ~30% oak + pistachio, ~10% French wine (accent).
+ */
+@theme {
+  --color-brand-butter: #f4e3a1;
+  --color-brand-butter-soft: #faf0c8;
+  --color-brand-cream: #fbf6ea;
+  --color-brand-oak: #7a5334;
+  --color-brand-oak-dark: #4e3321;
+  --color-brand-pistachio: #93a86e;
+  --color-brand-pistachio-soft: #e3ead3;
+  --color-brand-wine: #6e1f31;
+  --color-brand-wine-dark: #521522;
+}
+
+/* Font vars are set by next/font on the site wrapper (app/(site)/layout.tsx), so resolve them inline. */
+@theme inline {
+  --font-display: var(--font-brand-serif), "EB Garamond", Georgia, serif;
+  --font-body: var(--font-brand-sans), "Inter", system-ui, sans-serif;
+}
+
+@utility awning {
+  /* Parisian café awning stripes. */
+  background-image: repeating-linear-gradient(90deg, var(--color-brand-butter) 0 22px, var(--color-brand-cream) 22px 44px);
+}
+
+@utility btn-wine {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-wine px-6 font-semibold text-brand-cream transition hover:bg-brand-wine-dark active:scale-[0.98];
+}
+
+@utility btn-oak-outline {
+  @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-brand-oak px-6 font-semibold text-brand-oak transition hover:bg-brand-oak hover:text-brand-cream active:scale-[0.98];
+}

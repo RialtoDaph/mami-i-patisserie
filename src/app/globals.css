@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./brand.css";
 
 @theme {
   --color-cream: #fbf7f1;

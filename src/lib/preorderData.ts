@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "./supabase/server";
+import type { WebCategory } from "@/content/site";
 import type {
   Campaign, Customer, FulfillMethod, Order, OrderStatus, Payment, PaymentMethod, Product, Settings,
 } from "./preorder";
@@ -13,6 +14,7 @@ interface ProductRow {
   id: string; name: string; description: string | null; recipe_id: string | null; bundle_id: string | null;
   units_per_product: Num; price: Num; show_on_website: boolean; preorder_enabled: boolean;
   weekly_capacity: number | null; min_lead_days: number; photo_path: string | null; is_active: boolean; is_dummy: boolean;
+  web_category: WebCategory;
 }
 interface CampaignRow {
   id: string; name: string; preorder_open: string; preorder_close: string; fulfill_start: string | null;
@@ -33,7 +35,7 @@ interface SettingsRow {
   bank_account_name: string | null; qris_note: string | null; pickup_address: string | null; default_dp_percent: Num;
 }
 
-export interface ProductFull extends Product { isDummy: boolean }
+export interface ProductFull extends Product { isDummy: boolean; webCategory: WebCategory }
 export interface CampaignFull extends Campaign { notes: string | null; isDummy: boolean }
 export interface CustomerFull extends Customer { isDummy: boolean; createdAt: string }
 export interface OrderFull extends Order { isDummy: boolean }
@@ -42,7 +44,7 @@ export const mapProduct = (r: ProductRow): ProductFull => ({
   id: r.id, name: r.name, description: r.description, recipeId: r.recipe_id, bundleId: r.bundle_id,
   unitsPerProduct: num(r.units_per_product), price: num(r.price), showOnWebsite: r.show_on_website,
   preorderEnabled: r.preorder_enabled, weeklyCapacity: r.weekly_capacity, minLeadDays: r.min_lead_days,
-  photoPath: r.photo_path, isActive: r.is_active, isDummy: r.is_dummy,
+  photoPath: r.photo_path, isActive: r.is_active, isDummy: r.is_dummy, webCategory: r.web_category,
 });
 
 const mapCampaign = (r: CampaignRow): CampaignFull => ({
