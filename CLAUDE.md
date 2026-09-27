@@ -107,7 +107,7 @@ Context for every Claude Code session working on this repository. Read this firs
 
 - Supabase project "Mami i Patiserrie" (ref `mxkmavpebiawiknnbxam`, eu-west-1). Migrations
   20260926000001–03, 20260927000001–02 (preorder) + full DUMMY seed applied on 2026-09-27.
-  20260927000003 (public site) NOT applied yet.
+  20260927000003 (public site) applied on 2026-09-27.
   New migrations: add a file in
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
