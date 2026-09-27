@@ -41,6 +41,11 @@ function parentsFirst(roots: string[], recipes: Map<string, Recipe>): string[] {
   return post.reverse();
 }
 
+export interface NeedsOptions {
+  /** Round each recipe up to whole batches (sub-recipes are then scaled from the rounded batches). */
+  roundBatches?: boolean;
+}
+
 /**
  * Recipe quantities needed to make the given products, expanding bundles into their
  * recipes and recipes into their sub-recipes (scaled by batches, including waste).
@@ -50,6 +55,7 @@ export function recipeNeeds(
   products: Product[],
   recipes: Recipe[],
   bundles: Bundle[],
+  options: NeedsOptions = {},
 ): ScheduleRecipeLine[] {
   const recipeMap = new Map(recipes.map((r) => [r.id, r]));
   const need = new Map<string, number>();
@@ -78,7 +84,9 @@ export function recipeNeeds(
     const r = recipeMap.get(id)!;
     const q = need.get(id) ?? 0;
     if (q <= 0) continue;
-    const batches = q / sellableQuantity(r.yieldQty, r.wastePct);
+    const exact = q / sellableQuantity(r.yieldQty, r.wastePct);
+    // Tolerance so float noise (e.g. 2.0000000001) does not add a whole batch.
+    const batches = options.roundBatches ? Math.ceil(exact - 1e-9) : exact;
     for (const it of r.items) {
       if (it.source.kind !== "recipe") continue;
       const sub = recipeMap.get(it.source.id);

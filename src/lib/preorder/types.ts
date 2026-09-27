@@ -60,6 +60,8 @@ export interface OrderItem {
   productId: string;
   qty: number;
   unitPrice: number;
+  /** HPP per product unit when the order was saved; null/absent = not stored. */
+  unitCost?: number | null;
 }
 
 export interface Payment {

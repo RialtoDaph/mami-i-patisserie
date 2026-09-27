@@ -17,7 +17,8 @@ export type Action =
   | "payment.delete"
   | "catalog.edit"
   | "settings.edit"
-  | "dashboard.view";
+  | "dashboard.view"
+  | "profit.view";
 
 const RULES: Record<Action, AppRole[]> = {
   "ingredient.edit": ["owner", "admin", "produksi"],
@@ -33,6 +34,7 @@ const RULES: Record<Action, AppRole[]> = {
   "catalog.edit": ["owner", "admin"],
   "settings.edit": ["owner", "admin"],
   "dashboard.view": ["owner", "admin"],
+  "profit.view": ["owner", "admin"],
 };
 
 export function can(role: AppRole | null, action: Action): boolean {

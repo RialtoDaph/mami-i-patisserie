@@ -6,7 +6,9 @@ import { createClient } from "./supabase/server";
 import { friendlyError } from "./errors";
 import type { ActionResult } from "./actions";
 import { WEB_CATEGORIES, type WebCategory } from "@/content/site";
-import { normalizeWhatsapp, type FulfillMethod, type OrderStatus, type PaymentMethod } from "./preorder";
+import { loadCostingData } from "./data";
+import { mapProduct } from "./preorderData";
+import { normalizeWhatsapp, productCosts, type FulfillMethod, type OrderStatus, type PaymentMethod } from "./preorder";
 
 function refresh() {
   revalidatePath("/app", "layout");
@@ -35,6 +37,12 @@ export async function saveOrder(input: OrderInput): Promise<ActionResult> {
   if (!input.items.length) return { error: "Pilih minimal 1 produk." };
 
   const supabase = await createClient();
+  let unitCosts: Map<string, number | null>;
+  try {
+    unitCosts = await snapshotCosts(supabase, input);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Gagal menghitung HPP." };
+  }
   const { data: customerId, error: cErr } = await supabase.rpc("upsert_customer", {
     p_whatsapp: wa,
     p_name: input.customer.name,
@@ -57,11 +65,39 @@ export async function saveOrder(input: OrderInput): Promise<ActionResult> {
       notes: input.notes,
       status: input.dpAmount > 0 ? "menunggu_dp" : "baru",
     },
-    p_items: input.items.map((i) => ({ product_id: i.productId, qty: i.qty, unit_price: Math.round(i.unitPrice) })),
+    p_items: input.items.map((i) => ({
+      product_id: i.productId,
+      qty: i.qty,
+      unit_price: Math.round(i.unitPrice),
+      unit_cost: unitCosts.get(i.productId) ?? null,
+    })),
   });
   if (error) return { error: friendlyError(error) };
   refresh();
   redirect(input.id ? `/app/order/${id}` : `/app/order/${id}?baru=1`);
+}
+
+/**
+ * HPP per product unit to store on the order items. When editing, products already on the
+ * order keep their original snapshot; new products get the current HPP.
+ */
+async function snapshotCosts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  input: OrderInput,
+): Promise<Map<string, number | null>> {
+  const ids = [...new Set(input.items.map((i) => i.productId))];
+  const [costing, prod, old] = await Promise.all([
+    loadCostingData(),
+    supabase.from("products").select("*").in("id", ids),
+    input.id
+      ? supabase.from("order_items").select("product_id, unit_cost").eq("order_id", input.id)
+      : Promise.resolve({ data: [] as { product_id: string; unit_cost: number | string | null }[], error: null }),
+  ]);
+  const error = prod.error ?? old.error;
+  if (error) throw new Error(friendlyError(error));
+  const costs = productCosts((prod.data ?? []).map(mapProduct), costing);
+  for (const o of old.data ?? []) if (o.unit_cost != null) costs.set(o.product_id, Number(o.unit_cost));
+  return costs;
 }
 
 export async function setOrderStatus(id: string, status: OrderStatus): Promise<ActionResult> {

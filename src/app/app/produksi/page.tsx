@@ -5,6 +5,7 @@ import { loadPreorderData } from "@/lib/preorderData";
 import { addDays, formatDateId, isIsoDate, productionSchedule, todayJakarta } from "@/lib/preorder";
 import { PageHeader } from "@/components/ui";
 import { ProductionDay } from "@/components/ProductionDay";
+import { ProductionTabs } from "./ProductionTabs";
 
 export const metadata: Metadata = { title: "Produksi" };
 
@@ -26,6 +27,7 @@ export default async function ProductionPage({ searchParams }: { searchParams: P
   return (
     <>
       <PageHeader title="Jadwal produksi" />
+      <ProductionTabs active="jadwal" />
       <p className="-mt-2 mb-3 text-sm text-muted">Per tanggal ambil/kirim. Order batal tidak dihitung.</p>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Link href={link(addDays(from, -days), days)} className="chip-off">← Sebelumnya</Link>

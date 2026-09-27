@@ -91,6 +91,8 @@ Context for every Claude Code session working on this repository. Read this firs
   (UI-only mirror of RLS), `src/proxy.ts` (Next 16 "proxy" = middleware; guards `/app`).
 - `src/lib/preorder/` — pure preorder logic + tests (capacity, payment/DP, validation, WhatsApp messages,
   production schedule, dashboard, filters). SQL mirrors: `week_start`, `check_order_capacity`, `validate_order_rules`.
+- Shopping list & gross profit: `src/lib/preorder/shopping.ts`, `profit.ts` (pure, tested); page `/app/produksi/belanja`
+  (+ `/export` CSV), params in `src/lib/shoppingParams.ts`. `order_items.unit_cost` = HPP snapshot set by `saveOrder`.
 - `src/lib/preorderData.ts` (loads all preorder data), `src/lib/preorderActions.ts`, `src/lib/upload.ts`
   (client-side photo compress + Storage upload), `src/lib/errors.ts`.
 - Nav: Beranda `/app` (dashboard for owner/admin, production for others) · Order `/app/order` · Produksi
@@ -107,7 +109,7 @@ Context for every Claude Code session working on this repository. Read this firs
 
 - Supabase project "Mami i Patiserrie" (ref `mxkmavpebiawiknnbxam`, eu-west-1). Migrations
   20260926000001–03, 20260927000001–02 (preorder) + full DUMMY seed applied on 2026-09-27.
-  20260927000003 (public site) applied on 2026-09-27.
+  20260927000003 (public site) applied on 2026-09-27. 20260928000001 (order_items.unit_cost) applied on 2026-09-27.
   New migrations: add a file in
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
@@ -189,6 +191,18 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   (~5%, CTAs/alerts only). Only these four colors are allowed, on the website AND the internal app (globals.css maps
   onto brand.css). Tints/shades are derived with color-mix. Text on pistachio fills is always espresso (butter on
   pistachio fails contrast). HPP/status: under target = pistachio fill, over target = wine fill.
+- 2026-09-27: **Shopping list (#7) + gross profit (#8)** plan approved ("setuju semua"):
+  1. HPP snapshot per order item: `order_items.unit_cost` (HPP per product unit), computed in `saveOrder` with the
+     TS costing functions. On edit, products already on the order keep their snapshot. Items without a snapshot
+     (older orders) use the current HPP and are labelled as an estimate (no SQL backfill, to avoid duplicating
+     the costing logic in SQL).
+  2. Shopping list quantities: exact proportional need by default; toggle "Bulatkan ke batch penuh" rounds each recipe
+     up to whole batches over the whole range (sub-recipes scale from the rounded batches). Packs to buy = ceil.
+  3. Orders included: all non-cancelled in the date range (default next 7 days); toggle "Hanya yang sudah DP"
+     (status past DP, or payments ≥ DP).
+  4. produksi (Mami) sees estimated costs in the shopping list; profit (dashboard, order detail, CSV columns) is owner/admin.
+  5. Gross profit = (subtotal − discount) − HPP; shipping excluded. Counts all non-cancelled orders. Per-product
+     profit is before order discounts. "Sudah dibeli" ticks live in localStorage per device/range.
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->
