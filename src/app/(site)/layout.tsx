@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { site } from "@/content/site";
 import { CartProvider } from "@/components/site/CartProvider";
-import { CartBar } from "@/components/site/CartBar";
-import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SiteFooter, SiteOverlays } from "@/components/site/SiteOverlays";
+import { getSiteConfig } from "@/lib/site/config";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -19,13 +20,14 @@ export const metadata: Metadata = {
 };
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
+  const { modeNatal } = getSiteConfig();
   return (
-    <div className={`min-h-dvh bg-brand-cream font-body text-brand-espresso`}>
+    <div className="relative min-h-dvh overflow-x-clip bg-brand-butter-50 font-body text-brand-espresso">
       <CartProvider>
-        <SiteHeader />
+        <SiteHeader modeNatal={modeNatal} />
         <main>{children}</main>
-        <SiteFooter />
-        <CartBar />
+        <SiteFooter modeNatal={modeNatal} />
+        <SiteOverlays modeNatal={modeNatal} />
       </CartProvider>
     </div>
   );

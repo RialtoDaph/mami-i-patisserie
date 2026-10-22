@@ -98,9 +98,12 @@ Context for every Claude Code session working on this repository. Read this firs
 - Nav: Beranda `/app` (dashboard for owner/admin, production for others) · Order `/app/order` · Produksi
   `/app/produksi` · Costing `/app/costing` (+ `/app/bahan`, `/app/resep`, `/app/paket`) · Lainnya `/app/lainnya`
   (`/app/pelanggan`, `/app/produk`, `/app/campaign`, `/app/pengaturan`). CSV: `/app/costing/export`, `/app/order/export`.
-- Public site: route group `src/app/(site)` (`/`, `/katalog`, `/hampers`, `/kontak`, `/keranjang`), components in
-  `src/components/site`, logic in `src/lib/site` (cart, WhatsApp message, anon catalog loader), copy in
-  `src/content/site.ts`, brand tokens in `src/app/brand.css`. Pages use ISR (`revalidate = 300`).
+- Public site (redesign 2026-10): route group `src/app/(site)` (`/`, `/menu`, `/hampers`, `/tentang`, `/faq`, `/kontak`,
+  `/keranjang` = 3-step checkout; `/katalog` redirects to `/menu`). Page bodies in `src/components/site/pages`, header/
+  drawers/footer in `src/components/site`. Static content until stage 4: `src/content/catalog.ts` (products, SAMPLE prices),
+  `campaigns.ts`, `shipping.ts` (SAMPLE fees), `site.ts` (contact/payment PLACEHOLDERs). Pure logic + tests in `src/lib/site`
+  (cart, checkout: DP/date rules); settings in `src/lib/site/config.ts` (env `NEXT_PUBLIC_MODE_NATAL=0` turns the Christmas
+  takeover off, until the settings table holds it). `placeWebOrder` is a stub: DEMO ref in dev, refuses in production.
 - Preorder data is loaded whole per request; revisit with pagination/server filters if orders grow to thousands.
 - Brand system (redesign 2026-10): tokens in `src/app/brand.css`, base components in `src/components/brand`
   (Button/ButtonLink/IconButton, PostCard/AppCard, Chip/Tag, Field/Input, Photo/Polaroid/ArchFrame/Sticker, Awning,
@@ -214,6 +217,10 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   (handwritten labels), self-hosted via @fontsource in the root layout (web + app). Natal green `#2d4a3a` is allowed
   ONLY for the Christmas campaign; oak `#b9864f/#9c6b3f/#7a5230` only for the Etalase facade. App UI pattern:
   radius 6px, 1.5px lines, card bg butter-50. Web: pill CTAs (min 52px), postcard cards (radius 0).
+- 2026-10-22 (Alto): hero Beranda = "sekarang" (arched frame + sticker 24); Etalase/samping/masuk are archived, not built.
+  Mode Natal = takeover as in the prototype: /, /menu, /hampers, /tentang, /faq show the Natal page; nav Hampers (#paket) ·
+  Cara pesan (#cara) · FAQ (#tanya) · Kontak; /kontak and /keranjang stay normal. Normal pages are built too.
+  Rule: when docs and prototype differ, the prototype wins; ask when unsure.
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->

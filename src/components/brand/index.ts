@@ -1,5 +1,5 @@
 export { Icon, type IconName } from "./Icon";
-export { Button, ButtonLink, IconButton, CountBadge, buttonClass } from "./Button";
+export { Button, ButtonLink, IconButton, CountBadge, buttonClass, type ButtonVariant } from "./Button";
 export { PostCard, AppCard } from "./Card";
 export { Chip, Tag, Eyebrow } from "./Chip";
 export { Field, Input, Textarea, Select, controlClass } from "./Field";

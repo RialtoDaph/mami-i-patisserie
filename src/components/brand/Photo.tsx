@@ -73,14 +73,14 @@ export function ArchFrame({ className, children }: { className?: string; childre
 }
 
 /** Round pistachio sticker (128px): big number + small uppercase line. Text on pistachio is espresso. */
-export function Sticker({ big, small, tilt = 8, className }: { big: React.ReactNode; small: React.ReactNode; tilt?: number; className?: string }) {
+export function Sticker({ big, small, tilt = 8, size = 128, className }: { big: React.ReactNode; small: React.ReactNode; tilt?: number; size?: number; className?: string }) {
   return (
     <div
-      className={`flex size-32 flex-col items-center justify-center rounded-full bg-brand-pistachio text-brand-espresso shadow-[0_10px_24px_rgb(62_39_35/.2)] ${className ?? ""}`}
-      style={{ transform: `rotate(${tilt}deg)` }}
+      className={`flex flex-col items-center justify-center rounded-full bg-brand-pistachio text-brand-espresso shadow-[0_8px_20px_rgb(62_39_35/.2)] ${className ?? ""}`}
+      style={{ width: size, height: size, transform: `rotate(${tilt}deg)` }}
     >
-      <span className="font-display text-[40px] leading-none italic">{big}</span>
-      <span className="mt-1 text-[11px] font-bold tracking-[.14em] uppercase">{small}</span>
+      <span className="mb-1.5 font-display text-[clamp(30px,7.5vw,40px)] leading-[.9] font-bold">{big}</span>
+      <span className={`font-bold tracking-[.14em] uppercase ${size < 128 ? "text-[10px]" : "text-[11px]"}`}>{small}</span>
     </div>
   );
 }

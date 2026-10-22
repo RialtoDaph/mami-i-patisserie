@@ -92,7 +92,7 @@ export function IconButton({
       {...rest}
     >
       <Icon name={icon} size={22} />
-      {badge != null && badge > 0 && <CountBadge n={badge} />}
+      {badge != null && <CountBadge n={badge} />}
     </button>
   );
 }

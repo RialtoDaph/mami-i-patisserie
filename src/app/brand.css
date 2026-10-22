@@ -40,6 +40,10 @@
   --shadow-polaroid: 0 14px 30px rgb(62 39 35 / 0.18);
   --shadow-sign: 0 16px 28px rgb(42 26 23 / 0.35);
 
+  /* Website layout switches: < 760px = phone header (rod + drawer), ≥ 1000px = checkout two columns. */
+  --breakpoint-nav: 47.5rem;
+  --breakpoint-wide: 62.5rem;
+
   --ease-pop: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.3, 1.4, 0.5, 1);
 
@@ -59,6 +63,12 @@
     50% { transform: perspective(500px) rotateX(24deg); opacity: 1; }
     75% { transform: perspective(500px) rotateX(-8deg); }
     100% { transform: perspective(500px) rotateX(0deg); opacity: 1; }
+  }
+  --animate-fade-up: fade-up 0.3s ease both;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
   }
   @keyframes sign-swing {
     0%, 100% { rotate: -1.2deg; }

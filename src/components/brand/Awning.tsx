@@ -38,23 +38,26 @@ export function Awning({ slope, animate, className }: { slope?: boolean; animate
   );
 }
 
-/** 8px stripes + 8px fringe for the compact sticky bar. */
-export function MiniAwning({ className }: { className?: string }) {
+/** Compact canopy: stripes + fringe. Default 8px/8px; the sticky website bar uses 22px stripes with a 16px fringe. */
+export function MiniAwning({ stripe = 8, fringe = 8, className }: { stripe?: number; fringe?: number; className?: string }) {
+  const shade =
+    stripe > 12 ? "linear-gradient(180deg, rgb(42 26 23 / .3) 0px, rgb(42 26 23 / 0) 8px, rgb(255 255 255 / .12) 12px, rgb(42 26 23 / .14) 20px), " : "";
   return (
-    <div aria-hidden className={className}>
-      <div className="h-2" style={{ backgroundImage: stripes() }} />
-      <div className="h-2" style={{ background: scallops(8) }} />
-    </div>
+    <span aria-hidden className={`block ${className ?? ""}`}>
+      <span className="block" style={{ height: stripe, backgroundImage: shade + stripes() }} />
+      <span className="block" style={{ height: fringe, background: scallops(fringe) }} />
+    </span>
   );
 }
 
-/** Wine/butter divider strip (default 20px). */
-export function StripeDivider({ height = 20, className }: { height?: number; className?: string }) {
+/** Wine/butter divider strip: `height` tall, stripes `stripe` px wide (prototype: 20px, drawers 16px). */
+export function StripeDivider({ height = 20, stripe = 20, light = "butter", className }: { height?: number; stripe?: number; light?: "butter" | "butter-50"; className?: string }) {
+  const b = light === "butter" ? BUTTER : "var(--color-brand-butter-50)";
   return (
     <div
       aria-hidden
       className={className}
-      style={{ height, backgroundImage: `repeating-linear-gradient(90deg, ${WINE} 0 ${height}px, ${BUTTER} ${height}px ${height * 2}px)` }}
+      style={{ height, backgroundImage: `repeating-linear-gradient(90deg, ${WINE} 0 ${stripe}px, ${b} ${stripe}px ${stripe * 2}px)` }}
     />
   );
 }

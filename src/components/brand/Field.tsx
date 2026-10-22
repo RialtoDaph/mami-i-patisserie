@@ -13,7 +13,7 @@ const CONTROL: Record<FieldTone, string> = {
 
 export function controlClass(tone: FieldTone = "web", className?: string) {
   return [
-    "block w-full min-w-0 border-[1.5px] bg-white text-base text-brand-espresso outline-none transition-[border-color,box-shadow]",
+    "block w-full min-w-0 border-[1.5px] bg-white text-base font-normal text-brand-espresso outline-none transition-[border-color,box-shadow]",
     "placeholder:text-brand-muted/70 focus:border-brand-wine focus:ring-3 focus:ring-brand-wine/12",
     "aria-invalid:border-brand-wine disabled:opacity-60",
     CONTROL[tone],

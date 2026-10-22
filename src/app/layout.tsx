@@ -25,8 +25,10 @@ const sans = localFont({
 });
 
 const script = localFont({
-  src: "../../node_modules/@fontsource/kalam/files/kalam-latin-400-normal.woff2",
-  weight: "400",
+  src: [
+    { path: "../../node_modules/@fontsource/kalam/files/kalam-latin-400-normal.woff2", weight: "400" },
+    { path: "../../node_modules/@fontsource/kalam/files/kalam-latin-700-normal.woff2", weight: "700" },
+  ],
   variable: "--font-brand-script",
   display: "swap",
 });
