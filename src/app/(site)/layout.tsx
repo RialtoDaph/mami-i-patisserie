@@ -3,6 +3,7 @@ import { site } from "@/content/site";
 import { CartProvider } from "@/components/site/CartProvider";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter, SiteOverlays } from "@/components/site/SiteOverlays";
+import { SiteMotion } from "@/components/site/SiteMotion";
 import { getSiteConfig } from "@/lib/site/config";
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
-  const { modeNatal } = getSiteConfig();
+  const { modeNatal, snow } = getSiteConfig();
   return (
     <div className="relative min-h-dvh overflow-x-clip bg-brand-butter-50 font-body text-brand-espresso">
       <CartProvider>
@@ -28,6 +29,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <main>{children}</main>
         <SiteFooter modeNatal={modeNatal} />
         <SiteOverlays modeNatal={modeNatal} />
+        <SiteMotion snow={snow} />
       </CartProvider>
     </div>
   );

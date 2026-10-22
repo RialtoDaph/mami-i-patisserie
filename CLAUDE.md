@@ -103,7 +103,10 @@ Context for every Claude Code session working on this repository. Read this firs
   drawers/footer in `src/components/site`. Static content until stage 4: `src/content/catalog.ts` (products, SAMPLE prices),
   `campaigns.ts`, `shipping.ts` (SAMPLE fees), `site.ts` (contact/payment PLACEHOLDERs). Pure logic + tests in `src/lib/site`
   (cart, checkout: DP/date rules); settings in `src/lib/site/config.ts` (env `NEXT_PUBLIC_MODE_NATAL=0` turns the Christmas
-  takeover off, until the settings table holds it). `placeWebOrder` is a stub: DEMO ref in dev, refuses in production.
+  takeover off, `NEXT_PUBLIC_SNOW=hero|semua|mati`, until the settings table holds them). `placeWebOrder` is a stub: DEMO ref in
+  dev, refuses in production. Motion layer (snow, lights, Natal intro, tilt+glare, scroll reveal, fly-to-cart) lives in
+  `src/components/site/SiteMotion.tsx`; pages only mark elements (`data-tilt`, `data-glare`, `data-twinkle`, `#nt-*`).
+  Everything is skipped under prefers-reduced-motion. Snow follows the snow setting, independent of mode Natal (as in the prototype).
 - Preorder data is loaded whole per request; revisit with pagination/server filters if orders grow to thousands.
 - Brand system (redesign 2026-10): tokens in `src/app/brand.css`, base components in `src/components/brand`
   (Button/ButtonLink/IconButton, PostCard/AppCard, Chip/Tag, Field/Input, Photo/Polaroid/ArchFrame/Sticker, Awning,
