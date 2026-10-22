@@ -192,9 +192,8 @@ export function NatalPage({ config, scrollTo }: { config: SiteConfig; scrollTo?:
 
       <section className="px-page flex flex-wrap items-center justify-between gap-7 bg-brand-espresso py-[clamp(44px,7vw,72px)] text-brand-butter">
         <div className="flex flex-[1_1_320px] flex-col gap-2">
-          {/* PLACEHOLDER copy from the prototype: it says 2028 here but "Oktober 2027" elsewhere; Nana to confirm. */}
           <Script tilt={0} className="text-brand-pistachio">
-            segera hadir, 2028
+            segera hadir, Oktober 2027
           </Script>
           <h2 className="font-display text-[clamp(28px,4vw,40px)] leading-[1.1] font-bold">Toko &amp; kafe Mami I</h2>
           <span className="text-base leading-normal text-brand-butter-50">Sekarang kami baru melayani hampers. Ikuti Instagram untuk kabar berikutnya.</span>
