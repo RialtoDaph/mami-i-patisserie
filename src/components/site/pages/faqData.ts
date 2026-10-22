@@ -2,12 +2,12 @@
 // alergen) are still pending from Alto (see CHECKLIST "Masih ditunggu").
 
 export const FAQ = [
-  ["Pemesanan", "Bagaimana cara memesan?", "Pilih produk dan masukkan ke keranjang, isi data di halaman checkout, lalu kirim pesanan lewat WhatsApp. Admin akan mengonfirmasi harga, ongkir, dan tanggal."],
+  ["Pemesanan", "Bagaimana cara memesan?", "Pilih produk dan masukkan ke keranjang, isi data dan tanggal di checkout, lalu bayar DP 40% atau lunas lewat QRIS atau transfer BCA dan upload bukti bayar. Pesanan dianggap masuk setelah bukti dicek admin. Batas bayar 1 jam setelah checkout."],
   ["Pemesanan", "Berapa hari sebelumnya harus pesan?", "Minimal 2 hari sebelum tanggal ambil atau kirim. Untuk hampers Lebaran 2027, pre-order dibuka 15 Januari dan ditutup 3 Maret 2027."],
   ["Pemesanan", "Bisa pesan untuk hari ini?", "Belum bisa. Semua produk dibuat sesuai pesanan supaya tetap segar, jadi butuh waktu minimal 2 hari."],
   ["Pemesanan", "Kapan pemesanan online dibuka?", "Pemesanan online mulai Januari 2027. Sebelum itu kamu tetap bisa bertanya atau memesan lewat WhatsApp."],
   ["Pembayaran", "Kapan saya harus membayar?", "DP 40% untuk mengunci pesanan, dibulatkan ke atas per Rp 50.000. Sisanya dilunasi sebelum pesanan diambil atau dikirim."],
-  ["Pembayaran", "Metode pembayarannya apa saja?", "Transfer bank dan QRIS. Nomor rekening dan kode QRIS dikirim admin lewat WhatsApp setelah pesanan dikonfirmasi."],
+  ["Pembayaran", "Metode pembayarannya apa saja?", "QRIS atau transfer BCA. Kode QRIS dan nomor rekening tampil di langkah Bayar saat checkout. Setelah bayar, upload bukti di halaman yang sama."],
   ["Pembayaran", "Bagaimana kalau saya batal?", "Kabari admin secepatnya. Pembatalan sebelum bahan disiapkan bisa dibicarakan untuk pengembalian atau penjadwalan ulang DP."],
   ["Pengiriman", "Pesanan bisa dikirim ke mana?", "Kota Bandung dan sekitarnya dengan kurir instan. Produk frozen dan kue kering juga bisa dikirim ke luar kota lewat ekspedisi."],
   ["Pengiriman", "Berapa ongkirnya?", "Sesuai jarak dan tarif kurir saat pengiriman. Admin akan mengonfirmasi ongkir sebelum kamu membayar."],

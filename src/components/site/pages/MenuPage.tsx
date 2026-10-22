@@ -243,7 +243,7 @@ export function MenuPage() {
           <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-2.5">
             <Script tilt={0}>la carte</Script>
             <h1 className="font-display text-[clamp(44px,5vw,64px)] leading-none font-bold">Menu Mami I</h1>
-            <p className="max-w-[560px] text-lg leading-[1.6] text-brand-muted">Semua dibuat berdasarkan pesanan (preorder). Harga final dan ongkir dikonfirmasi admin via WhatsApp.</p>
+            <p className="max-w-[560px] text-lg leading-[1.6] text-brand-muted">Semua dibuat berdasarkan pesanan (preorder), minimal 2 hari sebelumnya. Ongkir langsung terhitung saat checkout.</p>
           </div>
           <div className="flex items-center gap-2.5 rounded-full bg-brand-butter-50 px-[18px] py-3 text-sm font-semibold whitespace-nowrap">
             <Icon name="schedule" className="text-brand-wine" /> Pesan online mulai Januari 2027

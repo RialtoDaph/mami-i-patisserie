@@ -18,16 +18,15 @@ const KAFE_NOTES = [
 ];
 
 const SHIPPING = [
-  ["moped", "Kota Bandung & sekitarnya", "Dikirim dengan kurir instan. Ongkir sesuai jarak, dikonfirmasi admin."],
+  ["moped", "Kota Bandung & sekitarnya", "Dikirim dengan kurir instan. Ongkir tarif tetap per area, langsung terhitung saat checkout."],
   ["local_shipping", "Luar kota", "Untuk kue kering dan hampers yang tahan lama, dikirim via ekspedisi."],
   ["storefront", "Ambil sendiri", "Alamat pengambilan diinformasikan via WhatsApp setelah order dikonfirmasi."],
 ] as const;
 
-// PLACEHOLDER copy from the prototype (Nana to finalise): still describes the WhatsApp order flow.
 const ORDER_STEPS = [
   "Pilih produk dan masukkan ke keranjang.",
-  "Tekan “Pesan via WhatsApp”, pesan berisi daftar pesanan akan terisi otomatis.",
-  "Admin mengonfirmasi harga, ongkir, dan tanggal. DP untuk mengunci pesanan.",
+  "Isi data, pilih tanggal (minimal 2 hari lagi) dan cara ambil atau kirim.",
+  "Bayar DP 40% atau lunas lewat QRIS atau transfer BCA, lalu upload bukti. Selesai.",
 ];
 
 const IG = [
@@ -266,7 +265,7 @@ export function HomePage() {
 
       <section id="cara-pesan" className="px-page grid scroll-mt-[72px] grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-center gap-[72px] bg-brand-butter py-[clamp(52px,9vw,88px)]">
         <div className="flex flex-col gap-6">
-          <h2 className={H2}>Pesan semudah chat</h2>
+          <h2 className={H2}>Pesan dalam 3 langkah</h2>
           <ol className="flex flex-col gap-[18px]">
             {ORDER_STEPS.map((t, i) => (
               <li key={t} className="flex items-start gap-[18px]">
@@ -276,26 +275,33 @@ export function HomePage() {
             ))}
           </ol>
           <div>
-            <WaButton className={`${PILL} bg-brand-wine text-brand-butter`}>Pesan via WhatsApp</WaButton>
+            <ButtonLink href="/menu">Mulai pesan</ButtonLink>
           </div>
         </div>
+        {/* Illustration of an order summary (sample prices). */}
         <div className="flex flex-col overflow-hidden rounded-[28px] border-[1.5px] border-brand-espresso bg-brand-butter-50">
-          <div className="flex items-center gap-3 bg-brand-espresso px-5 py-4 text-brand-butter">
-            <span className="flex size-9 items-center justify-center rounded-full bg-brand-butter font-display text-xs font-bold text-brand-espresso">MI</span>
-            <span className="font-bold">Mami I Patisserie</span>
+          <div className="flex items-center justify-between gap-3 bg-brand-espresso px-5 py-4 text-brand-butter">
+            <span className="font-bold">Pesanan MIP-0012</span>
+            <span className="rounded-full bg-brand-pistachio px-2.5 py-1 text-[13px] font-bold text-brand-espresso">DP diterima</span>
           </div>
-          <div className="flex flex-col gap-2.5 px-5 pt-6 pb-7">
-            <div className="max-w-[85%] self-end rounded-[16px_16px_4px_16px] bg-brand-butter px-4 py-3.5 text-[15px] leading-normal">
-              Halo Mami I Patisserie, saya mau pesan:
-              <br />
-              1× Mami&apos;s Blessings Box
-              <br />
-              2× Mami&apos;s Classic Croissant
-              <br />
-              Tanggal: …<br />
-              Ambil / kirim: …
+          <div className="flex flex-col gap-2.5 px-5 pt-[22px] pb-[26px] text-[15px] leading-normal">
+            <div className="flex justify-between gap-3">
+              <span>1× Mami&apos;s Blessings Box</span>
+              <b>Rp 250.000</b>
             </div>
-            <span className="self-end font-mono text-[11px] font-medium text-brand-muted">ilustrasi — pesan terisi otomatis</span>
+            <div className="flex justify-between gap-3">
+              <span>2× Mami&apos;s Classic Croissant</span>
+              <b>Rp 116.000</b>
+            </div>
+            <div className="flex justify-between gap-3 text-brand-muted">
+              <span>Ambil sendiri · Sab, 14 Nov</span>
+              <span>Rp 0</span>
+            </div>
+            <div className="flex justify-between gap-3 border-t-[1.5px] border-dashed border-brand-espresso/30 pt-2.5">
+              <span>DP 40% · QRIS</span>
+              <b className="text-brand-wine">Rp 150.000</b>
+            </div>
+            <span className="self-end font-mono text-[11px] font-medium text-brand-muted">ilustrasi · harga contoh</span>
           </div>
         </div>
       </section>
