@@ -102,6 +102,11 @@ Context for every Claude Code session working on this repository. Read this firs
   `src/components/site`, logic in `src/lib/site` (cart, WhatsApp message, anon catalog loader), copy in
   `src/content/site.ts`, brand tokens in `src/app/brand.css`. Pages use ISR (`revalidate = 300`).
 - Preorder data is loaded whole per request; revisit with pagination/server filters if orders grow to thousands.
+- Brand system (redesign 2026-10): tokens in `src/app/brand.css`, base components in `src/components/brand`
+  (Button/ButtonLink/IconButton, PostCard/AppCard, Chip/Tag, Field/Input, Photo/Polaroid/ArchFrame/Sticker, Awning,
+  DottedPrice, Script/SectionHead, Logo, Icon). Icons = inline SVG from Material Symbols Rounded: add a name in
+  `scripts/gen-icons.mjs` and run `node scripts/gen-icons.mjs`. Reference sheet at `/dev/komponen` (dev only).
+  Photos from the design handoff live in `public/images` (downscaled).
 - Checks: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
 - PostgREST note: `recipes`↔`recipe_items` has two FKs, so embed with `recipe_items!recipe_items_recipe_id_fkey(...)`.
 
@@ -183,7 +188,7 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   5. DUMMY products are hidden on the public site unless `NEXT_PUBLIC_SHOW_DUMMY=1` (for previews).
   6. Contact/story copy lives in `src/content/site.ts`, with PLACEHOLDERs clearly marked until Alto/Nana provide it.
      WhatsApp number via `NEXT_PUBLIC_WHATSAPP_NUMBER`, Instagram via `NEXT_PUBLIC_INSTAGRAM`, and site URL via `NEXT_PUBLIC_SITE_URL`.
-  7. Fonts: EB Garamond (headings; replaced Cormorant Garamond, whose packaged "â" renders misplaced) + Inter (body) via next/font.
+  7. Fonts: superseded by the 2026-10 redesign (Libre Baskerville + Instrument Sans + Kalam).
   8. Public data only through read-only SECURITY DEFINER RPCs (`public_catalog`, `public_campaigns`) granted to anon;
      base tables stay closed to anon. Brand colors live in `src/app/brand.css` (see palette decision below).
 - 2026-09-27: **Brand palette final** (from Alto/Nana), priority order: 1. Butter yellow `#F5E8AA` (~60%),
@@ -203,6 +208,12 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   4. produksi (Mami) sees estimated costs in the shopping list; profit (dashboard, order detail, CSV columns) is owner/admin.
   5. Gross profit = (subtotal − discount) − HPP; shipping excluded. Counts all non-cancelled orders. Per-product
      profit is before order discounts. "Sudah dibeli" ticks live in localStorage per device/range.
+- 2026-10-22: **Full redesign from the design handoff** ("Redesign web mami keseluruhan", docs: README/WEB/APP/DATA/
+  KEPUTUSAN/CHECKLIST). Alto asked to rebuild it stage by stage per CHECKLIST, reviewing each stage at 360/768/1280.
+  Stage 1 done: fonts Libre Baskerville 700 + italic 400 (headings), Instrument Sans 400–700 (text/UI), Kalam 400
+  (handwritten labels), self-hosted via @fontsource in the root layout (web + app). Natal green `#2d4a3a` is allowed
+  ONLY for the Christmas campaign; oak `#b9864f/#9c6b3f/#7a5230` only for the Etalase facade. App UI pattern:
+  radius 6px, 1.5px lines, card bg butter-50. Web: pill CTAs (min 52px), postcard cards (radius 0).
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->
