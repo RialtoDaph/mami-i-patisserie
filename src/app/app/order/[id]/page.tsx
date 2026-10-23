@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getCurrentUser, loadCostingData } from "@/lib/data";
 import { can } from "@/lib/permissions";
 import { loadPayments, loadPreorderData } from "@/lib/preorderData";
-import { deleteOrder, deletePayment } from "@/lib/preorderActions";
+import { deleteOrder, deletePayment, reviewPayment } from "@/lib/preorderActions";
 import {
   confirmationMessage, dpOutstanding, formatDateId, formatWhatsapp, FULFILL_LABEL, nextStatus, orderCountByCustomer,
   orderProfit, PAYMENT_METHOD_LABEL, paymentReminderMessage, paymentStatus, productCosts, readyMessage, remainingOf,
@@ -47,6 +47,7 @@ export default async function OrderDetailPage({
   return (
     <>
       <PageHeader title={order.orderNo} back="/app/order" action={<StatusBadge status={order.status} />} />
+      {order.channel === "web" && <p className="-mt-2 mb-3 text-sm font-semibold text-muted">Order dari website{order.payMode ? ` · pilih ${order.payMode === "lunas" ? "lunas" : "DP"}` : ""}</p>}
 
       {baru && (
         <div className="card mb-4 border-brand-pistachio bg-ok-bg">
@@ -66,7 +67,7 @@ export default async function OrderDetailPage({
         </Link>
         <div className="mt-2 border-t border-black/5 pt-2">
           <Row label="Tanggal" value={formatDateId(order.fulfillDate)} />
-          <Row label="Metode" value={FULFILL_LABEL[order.fulfillMethod]} />
+          <Row label="Metode" value={FULFILL_LABEL[order.fulfillMethod] + (order.deliveryArea ? ` · ${order.deliveryArea}` : "") + (order.pickupSlot ? ` · jam ${order.pickupSlot}` : "")} />
           {order.deliveryAddress && <p className="py-1 text-sm">{order.deliveryAddress}</p>}
           {campaign && <Row label="Campaign" value={campaign.name} />}
           {order.notes && <p className="mt-1 rounded-lg bg-brand-butter-soft px-3 py-2 text-sm">📝 {order.notes}</p>}
@@ -76,10 +77,13 @@ export default async function OrderDetailPage({
       <section className="card mb-4">
         <h2 className="mb-2 font-bold text-cocoa">Pesanan</h2>
         <ul className="mb-2 flex flex-col gap-1">
-          {order.items.map((i) => (
-            <li key={i.productId} className="flex justify-between gap-2">
-              <span>{i.qty}× {productName(i.productId)}</span>
-              <span className="shrink-0 whitespace-nowrap tabular-nums">{formatRupiah(i.qty * i.unitPrice)}</span>
+          {order.items.map((i, n) => (
+            <li key={`${i.productId}-${n}`} className="flex flex-col gap-1">
+              <span className="flex justify-between gap-2">
+                <span>{i.qty}× {productName(i.productId)}</span>
+                <span className="shrink-0 whitespace-nowrap tabular-nums">{formatRupiah(i.qty * i.unitPrice)}</span>
+              </span>
+              {i.cardNote && <span className="rounded-md bg-brand-butter-100 px-3 py-1.5 font-script text-base">Kartu: {i.cardNote}</span>}
             </li>
           ))}
         </ul>
@@ -123,8 +127,32 @@ export default async function OrderDetailPage({
                   <span className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-black/5 text-xs text-muted">tanpa bukti</span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold tabular-nums">{formatRupiah(p.amount)} · {PAYMENT_METHOD_LABEL[p.method]}</p>
-                  <p className="text-xs text-muted">{dateTime(p.paidAt)}{p.note && ` · ${p.note}`}</p>
+                  <p className={`font-semibold tabular-nums ${p.status === "rejected" ? "text-muted line-through" : ""}`}>
+                    {formatRupiah(p.amount)} · {PAYMENT_METHOD_LABEL[p.method]}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {dateTime(p.paidAt)}{p.note && ` · ${p.note}`}
+                    {p.status === "pending" && <b className="text-bad"> · belum dicek</b>}
+                    {p.status === "rejected" && " · ditolak"}
+                  </p>
+                  {p.status === "pending" && can(user.role, "payment.delete") && (
+                    <div className="mt-2 flex gap-2">
+                      <ConfirmActionButton
+                        action={reviewPayment.bind(null, p.id, "matched")}
+                        confirmText={`Bukti ${formatRupiah(p.amount)} cocok dengan mutasi/QRIS?`}
+                        label="Bukti cocok"
+                        pendingLabel="…"
+                        className="btn min-h-11 bg-brand-olive px-4 text-sm text-brand-butter"
+                      />
+                      <ConfirmActionButton
+                        action={reviewPayment.bind(null, p.id, "rejected")}
+                        confirmText="Tolak bukti ini?"
+                        label="Tolak"
+                        pendingLabel="…"
+                        className="btn min-h-11 border-[1.5px] border-brand-wine px-4 text-sm text-brand-wine"
+                      />
+                    </div>
+                  )}
                 </div>
                 {can(user.role, "payment.delete") && (
                   <ConfirmActionButton

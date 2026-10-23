@@ -4,7 +4,7 @@ import { CartProvider } from "@/components/site/CartProvider";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter, SiteOverlays } from "@/components/site/SiteOverlays";
 import { SiteMotion } from "@/components/site/SiteMotion";
-import { getSiteConfig } from "@/lib/site/config";
+import { loadSiteData } from "@/lib/site/data";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -20,11 +20,12 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: site.title, description: site.description },
 };
 
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
-  const { modeNatal, snow } = getSiteConfig();
+export default async function SiteLayout({ children }: { children: React.ReactNode }) {
+  const { settings, products } = await loadSiteData();
+  const { modeNatal, snow } = settings;
   return (
     <div className="relative min-h-dvh overflow-x-clip bg-brand-butter-50 font-body text-brand-espresso">
-      <CartProvider>
+      <CartProvider products={products}>
         <SiteHeader modeNatal={modeNatal} />
         <main>{children}</main>
         <SiteFooter modeNatal={modeNatal} />

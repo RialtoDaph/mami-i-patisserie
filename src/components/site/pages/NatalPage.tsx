@@ -1,8 +1,9 @@
 import Image from "next/image";
 import { ButtonLink, Icon, Script, StripeDivider } from "@/components/brand";
-import { daysUntil, NATAL_2026 } from "@/content/campaigns";
+import { daysUntil, endOfDayJakarta, longDate, longRange, shortDate, shortRange } from "@/content/campaigns";
+import { NATAL_PACKAGES, NATAL_SLUG } from "@/content/catalog";
 import { site } from "@/content/site";
-import type { SiteConfig } from "@/lib/site/config";
+import { campaignBySlug, type SiteData } from "@/lib/site/data";
 import { ScrollToSection } from "../bits";
 import { InstagramLink } from "../SiteOverlays";
 import { WaButton } from "../ui";
@@ -26,25 +27,34 @@ const SNOW_BANK =
 const H2 = "font-display text-[clamp(30px,4.5vw,44px)] leading-[1.05] font-bold";
 
 /** Christmas campaign page (takeover of /, /menu, /hampers, /tentang, /faq while modeNatal is on). */
-export function NatalPage({ config, scrollTo }: { config: SiteConfig; scrollTo?: string }) {
-  const quota = config.natalQuota;
-  const left = Math.max(0, quota - config.natalUsed);
-  const days = daysUntil(NATAL_2026.closeAt);
-  const open = days > 0 && left > 0;
+export function NatalPage({ data, scrollTo }: { data: SiteData; scrollTo?: string }) {
+  const campaign = campaignBySlug(data.campaigns, NATAL_SLUG);
+  const quota = campaign?.quota ?? 0;
+  const left = Math.max(0, quota - (campaign?.used ?? 0));
+  const close = campaign?.preorderClose ?? "2026-12-18";
+  const from = campaign?.fulfillStart ?? "2026-12-20";
+  const to = campaign?.fulfillEnd ?? "2026-12-24";
+  const days = daysUntil(endOfDayJakarta(close));
+  const open = Boolean(campaign?.isOpen) && days > 0 && left > 0;
+  const packages = (campaign?.products ?? []).flatMap((cp) => {
+    const p = data.products.find((x) => x.id === cp.productId);
+    return p && p.slug && NATAL_PACKAGES[p.slug] ? [{ product: p, ...NATAL_PACKAGES[p.slug] }] : [];
+  });
+  const dp = data.settings.dpPercent;
   const closedMsg = left <= 0 ? "Kuota habis. Chat admin untuk daftar tunggu." : "Pemesanan sudah ditutup.";
   const pct = quota ? Math.round(((quota - left) / quota) * 100) : 0;
 
   const steps = [
     ["Pilih paket", "Tulis kartu ucapan kalau mau. Mami yang menuliskannya dengan tangan."],
-    ["Isi data & tanggal", "Pilih ambil di dapur atau kirim via JNE, tanggal 20–24 Des."],
+    ["Isi data & tanggal", `Pilih ambil di dapur atau kirim via JNE, tanggal ${shortRange(from, to)}.`],
     ["Bayar", "Transfer BCA atau QRIS, lalu upload bukti bayar."],
     ["Terima hampers", "Ambil sesuai jadwal atau tunggu kurir JNE. Pesanan dikonfirmasi lewat WhatsApp."],
   ];
   const faq = [
-    ["Sampai kapan bisa pesan?", `Sampai 18 Desember 2026, atau lebih cepat kalau kuota ${quota} box sudah habis.`],
-    ["Kapan hampers diambil atau dikirim?", "Tanggal 20–24 Desember 2026. Kamu pilih tanggalnya saat checkout."],
+    ["Sampai kapan bisa pesan?", `Sampai ${longDate(close)}, atau lebih cepat kalau kuota ${quota} box sudah habis.`],
+    ["Kapan hampers diambil atau dikirim?", `Tanggal ${longRange(from, to)}. Kamu pilih tanggalnya saat checkout.`],
     ["Bisa dikirim ke luar kota?", "Bisa, lewat JNE. Ongkir dihitung sesuai tujuan di halaman checkout."],
-    ["Bayarnya bagaimana?", `Transfer BCA atau QRIS. Bayar DP ${config.dpPercent}% untuk mengunci pesanan, atau langsung lunas.`],
+    ["Bayarnya bagaimana?", `Transfer BCA atau QRIS. Bayar DP ${dp}% untuk mengunci pesanan, atau langsung lunas.`],
     ["Apa saja isinya?", "Kue kering resep Mami dalam toples. Pilihan rasa sedang difinalkan dan akan diumumkan di Instagram."],
     ["Pesan banyak untuk kantor?", "Chat admin lewat WhatsApp, nanti kami bantu hitung."],
   ];
@@ -124,10 +134,10 @@ export function NatalPage({ config, scrollTo }: { config: SiteConfig; scrollTo?:
       <StripeDivider height={14} light="butter-50" />
       <div className="px-page flex flex-wrap justify-center gap-x-10 gap-y-2.5 bg-brand-espresso py-[18px] text-[15px] font-semibold text-brand-butter">
         <span className="flex items-center gap-2">
-          <Icon name="event_available" /> Pesan sampai 18 Des 2026
+          <Icon name="event_available" /> Pesan sampai {shortDate(close)}
         </span>
         <span className="flex items-center gap-2">
-          <Icon name="storefront" /> Ambil di dapur · 20–24 Des
+          <Icon name="storefront" /> Ambil di dapur · {shortRange(from, to)}
         </span>
         <span className="flex items-center gap-2">
           <Icon name="local_shipping" /> Kirim lewat JNE
@@ -140,7 +150,7 @@ export function NatalPage({ config, scrollTo }: { config: SiteConfig; scrollTo?:
           <h2 className={H2}>Tiga ukuran hampers</h2>
           <p className="mt-1.5 max-w-[560px] text-[15px] leading-normal text-brand-muted">Foto, harga, dan isi di bawah masih contoh. Rasa kue kering sedang difinalkan.</p>
         </div>
-        <NatalPackages open={open} closedMsg={closedMsg} />
+        <NatalPackages packages={packages} open={open} closedMsg={closedMsg} />
       </section>
 
       <section id="cara" className="px-page flex scroll-mt-[72px] flex-col gap-[clamp(28px,4vw,40px)] bg-brand-butter py-[clamp(52px,8vw,88px)]">
@@ -160,7 +170,7 @@ export function NatalPage({ config, scrollTo }: { config: SiteConfig; scrollTo?:
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-5">
           <div className="flex flex-col gap-2 bg-brand-natal p-6 text-brand-butter-50">
             <b className="font-display text-xl">Ambil di dapur Mami I</b>
-            <span className="text-[15px] leading-normal">{site.contact.address} · 20–24 Des 2026 · jam 10.00–17.00. Gratis.</span>
+            <span className="text-[15px] leading-normal">{site.contact.address} · {shortRange(from, to)} {to.slice(0, 4)} · jam 10.00–17.00. Gratis.</span>
           </div>
           <div className="flex flex-col gap-2 bg-brand-natal p-6 text-brand-butter-50">
             <b className="font-display text-xl">Kirim lewat JNE</b>

@@ -3,16 +3,23 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Eyebrow, PostCard } from "@/components/brand";
-import { NATAL_PACKAGES, productById } from "@/content/catalog";
 import { formatRupiah } from "@/lib/format";
 import { cardNote } from "@/lib/site/cart";
+import type { WebProduct } from "@/lib/site/types";
 import { AddButton } from "../bits";
 import { WaButton } from "../ui";
 
 const field = "h-12 min-w-0 font-normal border-[1.5px] border-brand-espresso/30 bg-white px-3.5 text-base outline-none focus:border-brand-wine";
 
 /** Optional greeting card + the three Christmas packages. The card text rides along with the package added. */
-export function NatalPackages({ open, closedMsg }: { open: boolean; closedMsg: string }) {
+export interface NatalPackage {
+  product: WebProduct;
+  toples: number;
+  zoom: number;
+  origin: string;
+}
+
+export function NatalPackages({ packages, open, closedMsg }: { packages: NatalPackage[]; open: boolean; closedMsg: string }) {
   const [to, setTo] = useState("");
   const [from, setFrom] = useState("");
   const [msg, setMsg] = useState("Selamat Natal! Semoga hangat dan manis di rumahmu.");
@@ -41,14 +48,14 @@ export function NatalPackages({ open, closedMsg }: { open: boolean; closedMsg: s
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,250px),1fr))] gap-6">
-        {NATAL_PACKAGES.map((pkg) => {
-          const p = productById(pkg.productId)!;
+        {packages.map((pkg) => {
+          const p = pkg.product;
           return (
             <PostCard key={p.id} data-tilt="card" className="relative flex flex-col gap-4 p-4 transition-shadow duration-200 hover:shadow-postcard-hover">
               <span data-glare aria-hidden className="pointer-events-none absolute inset-0 z-[2] opacity-0 transition-opacity duration-300" />
               <div className="relative aspect-[4/3] overflow-hidden bg-brand-butter-100">
                 <Image
-                  src={p.img!}
+                  src={p.img ?? "/images/hampers-kue-kering.jpg"}
                   alt={p.name}
                   fill
                   sizes="(max-width: 760px) 100vw, 33vw"

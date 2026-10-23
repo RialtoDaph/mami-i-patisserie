@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Icon, Input, Textarea } from "@/components/brand";
-import { HAMPERS_BOXES, productById } from "@/content/catalog";
+import { HAMPERS_BOXES } from "@/content/catalog";
+import type { WebProduct } from "@/lib/site/types";
 import { formatRupiah } from "@/lib/format";
 import { cardNote } from "@/lib/site/cart";
 import { useCart } from "../CartProvider";
@@ -29,9 +30,14 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 }
 
 /** "Rangkai bingkisan": pick a box, write the card (Mami hand-writes it), preview, add to cart. */
-export function HampersBuilder() {
+export function HampersBuilder({ products }: { products: WebProduct[] }) {
   const { add } = useCart();
-  const [sel, setSel] = useState<string>(HAMPERS_BOXES[0].productId);
+  // Boxes that exist in the catalog, with their presentation details.
+  const boxes = HAMPERS_BOXES.flatMap((b) => {
+    const p = products.find((x) => x.slug === b.slug);
+    return p ? [{ ...b, p }] : [];
+  });
+  const [sel, setSel] = useState<string>(boxes[0]?.slug ?? "");
   const [qty, setQty] = useState(1);
   const [tpl, setTpl] = useState(0);
   const [msg, setMsg] = useState<string>(TEMPLATES[0][1]);
@@ -39,8 +45,9 @@ export function HampersBuilder() {
   const [to, setTo] = useState("");
   const [cardOpen, setCardOpen] = useState(false);
 
-  const box = HAMPERS_BOXES.find((b) => b.productId === sel)!;
-  const product = productById(sel)!;
+  const box = boxes.find((b) => b.slug === sel);
+  if (!box) return <p className="text-brand-muted">Hampers belum tersedia.</p>;
+  const product = box.p;
   const hover = () => window.matchMedia("(hover: hover)").matches;
 
   return (
@@ -48,27 +55,27 @@ export function HampersBuilder() {
       <div className="flex flex-col gap-9">
         <Step n={1} title="Pilih isinya">
           <div className="flex flex-col gap-3">
-            {HAMPERS_BOXES.map((b) => {
-              const p = productById(b.productId)!;
-              const on = b.productId === sel;
+            {boxes.map((b) => {
+              const p = b.p;
+              const on = b.slug === sel;
               return (
                 <button
-                  key={b.productId}
+                  key={b.slug}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => setSel(b.productId)}
+                  onClick={() => setSel(b.slug)}
                   className={`grid grid-cols-[clamp(84px,18vw,112px)_minmax(0,1fr)_auto] items-center gap-4 rounded-[10px] bg-white p-3 text-left transition-shadow duration-200 ${
                     on ? "border-2 border-brand-wine shadow-[0_12px_26px_rgb(170_25_69/.14)]" : "border-[1.5px] border-brand-espresso/15"
                   }`}
                 >
                   <span className="relative block aspect-square overflow-hidden bg-brand-butter-100">
-                    <Image src={p.img!} alt={p.name} fill sizes="112px" className="object-cover" />
+                    <Image src={p.img ?? "/images/blessings-box.jpg"} alt={p.name} fill sizes="112px" className="object-cover" />
                   </span>
                   <span className="flex min-w-0 flex-col gap-1">
                     <span className="font-script text-lg leading-[1.1] text-brand-wine">{b.sub}</span>
                     <span className="font-display text-lg leading-tight font-bold">{p.name}</span>
                     <span className="text-sm leading-snug text-brand-muted">{b.short}</span>
-                    <b className="mt-0.5 text-[15px]">{formatRupiah(p.price)}</b>
+                    <b className="mt-0.5 text-[15px]">{p.showPrice ? formatRupiah(p.price) : "harga menyusul"}</b>
                   </span>
                   <span className={`flex size-7 items-center justify-center rounded-full border-2 text-brand-butter ${on ? "border-brand-wine bg-brand-wine" : "border-brand-espresso/30"}`}>
                     <Icon name="check" size={18} />
@@ -147,7 +154,7 @@ export function HampersBuilder() {
           <span className="text-[13px] font-bold text-brand-pistachio-deep">pratinjau</span>
         </div>
         <div className="relative aspect-[16/10] overflow-hidden bg-brand-butter">
-          <Image src={product.img!} alt={product.name} fill sizes="(max-width: 760px) 90vw, 560px" className="object-cover" />
+          <Image src={product.img ?? "/images/blessings-box.jpg"} alt={product.name} fill sizes="(max-width: 760px) 90vw, 560px" className="object-cover" />
           <span className="absolute bottom-3 left-3 rounded-full bg-brand-wine px-3 py-1.5 text-[13px] font-bold text-brand-butter">
             {qty} × {product.name}
           </span>
@@ -200,7 +207,7 @@ export function HampersBuilder() {
         </div>
         <button
           type="button"
-          onClick={(e) => add(sel, { qty, note: cardNote({ to, msg, from }), origin: { x: e.clientX, y: e.clientY } })}
+          onClick={(e) => add(product.id, { qty, note: cardNote({ to, msg, from }), origin: { x: e.clientX, y: e.clientY } })}
           className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-wine px-7 font-bold text-brand-butter transition hover:brightness-[.92] active:scale-[.97]"
         >
           <Icon name="redeem" size={22} /> Masukkan ke keranjang

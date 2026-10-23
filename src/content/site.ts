@@ -25,14 +25,6 @@ export const site = {
     pickupHours: "Senin–Sabtu · 10.00–17.00",
   },
 
-  // PLACEHOLDER (Alto): bank account & QRIS image are still pending. null = "menyusul".
-  payment: {
-    bank: "BCA",
-    accountNumber: null as string | null,
-    accountName: "Mami I Patisserie",
-    qrisImage: null as string | null,
-  },
-
   timeline: "Pesan online mulai Januari 2027 · Kafe kami buka Oktober 2027",
 };
 

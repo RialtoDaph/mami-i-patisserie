@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink, Icon, Script } from "@/components/brand";
 import { daysUntil, LEBARAN_2027 } from "@/content/campaigns";
+import { LEBARAN_SLUG } from "@/content/catalog";
+import { campaignBySlug, type SiteData } from "@/lib/site/data";
 import { AutoVideo } from "../bits";
 import { Breadcrumb, WaButton } from "../ui";
 import { HampersBuilder } from "./HampersBuilder";
@@ -15,8 +17,9 @@ const FAQ = [
   ["Kartu ucapannya ditulis tangan?", "Ya. Pesan yang kamu tulis akan ditulis ulang dengan tangan di kartu."],
 ];
 
-export function HampersPage() {
-  const days = daysUntil(LEBARAN_2027.openAt);
+export function HampersPage({ data }: { data: SiteData }) {
+  const lebaran = campaignBySlug(data.campaigns, LEBARAN_SLUG);
+  const days = daysUntil(`${lebaran?.preorderOpen ?? "2027-01-15"}T00:00:00+07:00`);
   return (
     <div data-page="hampers">
       <section className="px-page overflow-hidden bg-brand-wine pt-8 pb-[clamp(56px,8vw,96px)] text-brand-butter">
@@ -68,7 +71,7 @@ export function HampersPage() {
           <Script tilt={0}>rangkai bingkisanmu</Script>
           <h2 className={H2}>Tiga langkah, satu bingkisan</h2>
         </div>
-        <HampersBuilder />
+        <HampersBuilder products={data.products} />
       </section>
 
       <section id="lebaran" className="px-page flex scroll-mt-[72px] flex-col gap-[clamp(28px,4vw,40px)] bg-brand-butter py-[clamp(52px,8vw,88px)]">
@@ -77,7 +80,7 @@ export function HampersPage() {
             <Script tilt={0}>pre-order Lebaran 2027</Script>
             <h2 className={H2}>Tandai kalendernya</h2>
           </div>
-          <span className="text-base font-semibold">Kuota {LEBARAN_2027.quota} box · DP 40% mengunci pesanan</span>
+          <span className="text-base font-semibold">Kuota {lebaran?.quota ?? 150} box · DP {data.settings.dpPercent}% mengunci pesanan</span>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-[clamp(14px,2.5vw,24px)]">
           {LEBARAN_2027.timeline.map((s) => (

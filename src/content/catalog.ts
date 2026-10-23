@@ -1,49 +1,11 @@
-// Public website catalog, taken from the design prototype (Web.dc.html).
-// Stage 4 moves this into Supabase (products / campaigns) so Nana can edit it in the app (menu Konten).
-//
-// PRICES: every number here is a SAMPLE from the prototype ("harga contoh"), not a final price. Final prices
-// are still pending from Alto. While PRICES_ARE_SAMPLE is true the menu shows "harga menyusul" (as in the
-// prototype) and checkout labels totals as sample prices.
-
-export const PRICES_ARE_SAMPLE = true;
-
-export type ProductCategory = "pastry" | "frozen" | "hampers" | "natal";
-
-export interface Product {
-  id: string;
-  name: string;
-  desc: string;
-  category: ProductCategory;
-  /** Photo in /public, or null for a striped placeholder slot. */
-  img: string | null;
-  /** Description of the photo still to come (shown in the placeholder slot). */
-  photoNote: string;
-  /** SAMPLE price per item in Rupiah (see PRICES_ARE_SAMPLE). */
-  price: number;
-}
-
-export const PRODUCTS: Product[] = [
-  { id: "classic-croissant", name: "Mami's Classic Croissant", desc: "Croissant butter klasik, dipanggang setiap pagi.", category: "pastry", img: "/images/croissant.jpg", photoNote: "foto classic croissant", price: 28000 },
-  { id: "cheese-danish", name: "Signature Cheese Danish", desc: "Danish renyah dengan isian keju.", category: "pastry", img: "/images/danish.jpg", photoNote: "foto cheese danish", price: 32000 },
-  { id: "french-beignet", name: "Traditional French Beignet", desc: "Donat Prancis dengan taburan gula halus.", category: "pastry", img: "/images/beignet.jpg", photoNote: "foto beignet", price: 25000 },
-  { id: "pistachio-almond-croissant", name: "Pistachio & Almond Croissant", desc: "Croissant isi pistachio cream & almond.", category: "pastry", img: "/images/pistachio-croissant.jpg", photoNote: "foto pistachio almond croissant", price: 58000 },
-  { id: "heritage-risol", name: "Mami's Heritage Risol", desc: "Risol ragout ayam beku, isi 10. Tinggal goreng.", category: "frozen", img: "/images/risol-frozen.jpg", photoNote: "foto risol frozen dalam mika", price: 75000 },
-  { id: "croquette", name: "Mami's Croquette", desc: "Kroket beku, tinggal goreng.", category: "frozen", img: "/images/kroket-frozen.jpg", photoNote: "foto kroket frozen", price: 70000 },
-  { id: "signature-recipe", name: "Mami's Signature Recipe", desc: "Kue kering dari resep yang dikunci Mami selama 24 tahun, dalam box wine khas Mami I.", category: "hampers", img: "/images/hampers-kue-kering.jpg", photoNote: "foto box hampers kue kering", price: 185000 },
-  { id: "blessings-box", name: "Mami's Blessings Box", desc: "Pastry, risol, kroket, dan dalgona.", category: "hampers", img: "/images/blessings-box.jpg", photoNote: "foto Blessings Box", price: 250000 },
-  { id: "natal-mini", name: "Natal Mini", desc: "untuk satu rumah", category: "natal", img: "/images/hampers-kue-kering.jpg", photoNote: "foto paket Natal Mini", price: 165000 },
-  { id: "natal-classic", name: "Natal Classic", desc: "untuk keluarga", category: "natal", img: "/images/hampers-kue-kering.jpg", photoNote: "foto paket Natal Classic", price: 245000 },
-  { id: "natal-grande", name: "Natal Grande", desc: "untuk keluarga besar atau kantor kecil", category: "natal", img: "/images/hampers-kue-kering.jpg", photoNote: "foto paket Natal Grande", price: 385000 },
-];
-
-const BY_ID = new Map(PRODUCTS.map((p) => [p.id, p]));
-export const productById = (id: string): Product | undefined => BY_ID.get(id);
-export const productsIn = (category: ProductCategory) => PRODUCTS.filter((p) => p.category === category);
+// Presentation details of website products that are not stored in the database yet (Konten menu, stage 5):
+// box contents, Christmas jar counts and photo crops, keyed by product slug. Products, prices, campaigns and quotas
+// come from Supabase (src/lib/site/data.ts).
 
 /** Hampers boxes on /hampers ("rangkai bingkisan"). */
 export const HAMPERS_BOXES = [
   {
-    productId: "blessings-box",
+    slug: "blessings-box",
     sub: "paket silaturahmi",
     short: "Pastry, risol, kroket, dan dalgona.",
     items: [
@@ -54,7 +16,7 @@ export const HAMPERS_BOXES = [
     ],
   },
   {
-    productId: "signature-recipe",
+    slug: "signature-recipe",
     sub: "kue kering warisan",
     short: "3 toples kue kering resep 24 tahun.",
     items: [
@@ -62,17 +24,17 @@ export const HAMPERS_BOXES = [
       [1, "Box hampers wine + pita satin"],
     ],
   },
-] as const satisfies readonly { productId: string; sub: string; short: string; items: readonly (readonly [number, string])[] }[];
+] as const satisfies readonly { slug: string; sub: string; short: string; items: readonly (readonly [number, string])[] }[];
 
 /** Natal packages: jar count and how the shared photo is cropped per card. */
-export const NATAL_PACKAGES = [
-  { productId: "natal-mini", toples: 2, zoom: 1.9, origin: "20% 70%" },
-  { productId: "natal-classic", toples: 3, zoom: 1.3, origin: "50% 65%" },
-  { productId: "natal-grande", toples: 5, zoom: 1, origin: "50% 50%" },
-] as const;
+export const NATAL_PACKAGES: Record<string, { toples: number; zoom: number; origin: string }> = {
+  "natal-mini": { toples: 2, zoom: 1.9, origin: "20% 70%" },
+  "natal-classic": { toples: 3, zoom: 1.3, origin: "50% 65%" },
+  "natal-grande": { toples: 5, zoom: 1, origin: "50% 50%" },
+};
 
-export const NATAL_PRODUCT_IDS: readonly string[] = NATAL_PACKAGES.map((p) => p.productId);
-export const HAMPERS_PRODUCT_IDS: readonly string[] = [...productsIn("hampers"), ...productsIn("natal")].map((p) => p.id);
+export const NATAL_SLUG = "natal-2026";
+export const LEBARAN_SLUG = "lebaran-2027";
 
 /** Café menu (dine-in from October 2027). Display only, prices in thousand Rupiah, SAMPLE. */
 export const CAFE_MENU = [

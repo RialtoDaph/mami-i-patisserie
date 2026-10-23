@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink, Icon, Script, Sticker } from "@/components/brand";
-import { DRINKS, HAMPERS_BOXES, productsIn } from "@/content/catalog";
+import { DRINKS, HAMPERS_BOXES } from "@/content/catalog";
+import { bySlug, type SiteData } from "@/lib/site/data";
 import { AddButton, AutoVideo } from "../bits";
 import { InstagramLink } from "../SiteOverlays";
-import { Tape, WaButton } from "../ui";
+import { PriceTag, Tape, WaButton } from "../ui";
 import { GreetingCardTeaser } from "./HomeIslands";
 
 const H2 = "font-display text-[clamp(30px,7.5vw,45px)] leading-none font-bold";
@@ -40,8 +41,10 @@ const IG = [
 ] as const;
 
 /** Beranda outside the Christmas campaign. Hero = "sekarang" (arched frame + round 24 sticker), final per Alto. */
-export function HomePage() {
+export function HomePage({ data }: { data: SiteData }) {
   const box = HAMPERS_BOXES[0];
+  const boxProduct = bySlug(data.products, box.slug);
+  const pastries = data.products.filter((p) => p.category === "pastry");
   return (
     <div data-page="beranda">
       <section className="px-page grid grid-cols-[repeat(auto-fit,minmax(min(100%,360px),1fr))] items-center gap-14 bg-brand-butter pt-10 pb-[72px]">
@@ -88,7 +91,7 @@ export function HomePage() {
           <h2 className={`${H2} text-center`}>Freshly Baked Daily Pastry</h2>
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(max(150px,calc((100%-84px)/4)),1fr))] gap-[clamp(14px,2.5vw,28px)]">
-          {productsIn("pastry").map((p, i) => (
+          {pastries.map((p, i) => (
             <article
               key={p.id}
               className="group relative flex flex-col gap-3 border-t-[3px] border-brand-wine bg-white px-[18px] py-5 shadow-[0_10px_24px_rgb(62_39_35/.1)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_rgb(62_39_35/.18)]"
@@ -96,12 +99,12 @@ export function HomePage() {
             >
               <Tape tilt={6} className="-top-3.5 right-[18px]" />
               <div className="relative aspect-[4/3] overflow-hidden bg-brand-butter-100">
-                <Image src={p.img!} alt={p.name} fill sizes="(max-width: 760px) 50vw, 25vw" priority={i < 2} className="object-cover transition-transform duration-500 ease-(--ease-pop) group-hover:scale-[1.06]" />
+                <Image src={p.img ?? "/images/croissant.jpg"} alt={p.name} fill sizes="(max-width: 760px) 50vw, 25vw" priority={i < 2} className="object-cover transition-transform duration-500 ease-(--ease-pop) group-hover:scale-[1.06]" />
               </div>
               <span className="font-script text-[26px] leading-[1.1] font-bold">{p.name}</span>
               <span className="text-sm leading-normal text-brand-muted">{p.desc}</span>
               <div className="mt-auto flex flex-wrap items-center justify-between gap-2.5">
-                <span className="font-script text-[17px] text-brand-muted">harga menyusul</span>
+                <PriceTag product={p} />
                 <AddButton productId={p.id} label="+ Keranjang" icon={null} size="sm" block className="min-h-11" />
               </div>
             </article>
@@ -161,7 +164,7 @@ export function HomePage() {
             ))}
           </ul>
           <GreetingCardTeaser text="Bawa martabak sudah biasa. Ini bingkisan spesial dari Mami I untuk Mami-Papi di rumah. Semoga suka!" />
-          <AddButton productId={box.productId} label="+ Keranjang" icon={null} size="lg" block />
+          {boxProduct && <AddButton productId={boxProduct.id} label="+ Keranjang" icon={null} size="lg" block />}
         </div>
       </section>
 

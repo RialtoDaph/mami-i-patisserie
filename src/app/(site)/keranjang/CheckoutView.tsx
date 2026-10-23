@@ -6,23 +6,22 @@ import { useMemo, useState, useTransition } from "react";
 import { buttonClass, Icon, Input, Textarea, type IconName } from "@/components/brand";
 import { useCart } from "@/components/site/CartProvider";
 import { QtyStepper } from "@/components/site/SiteOverlays";
-import { NATAL_2026 } from "@/content/campaigns";
-import { NATAL_PRODUCT_IDS, PRICES_ARE_SAMPLE, productById } from "@/content/catalog";
-import { site } from "@/content/site";
-import { DELIVERY_AREAS, PICKUP_SLOTS, SHIPPING_IS_SAMPLE, type DeliveryMethod } from "@/content/shipping";
+import { PICKUP_SLOTS, type DeliveryMethod } from "@/content/shipping";
 import { formatDateId, todayJakarta } from "@/lib/preorder/dates";
 import { formatRupiah } from "@/lib/format";
 import { lineKey } from "@/lib/site/cart";
 import { dateBounds, dpAmount, payNow, subtotal, validateDetails, type CheckoutDetails, type DetailErrors, type PayPlan } from "@/lib/site/checkout";
-import { placeWebOrder } from "@/lib/site/orderActions";
+import type { WebSettings, WebShippingArea } from "@/lib/site/data";
+import { attachWebPayment, placeWebOrder } from "@/lib/site/orderActions";
 import { waLink } from "@/lib/site/wa";
+import { compressImage } from "@/lib/upload";
+import { createClient } from "@/lib/supabase/client";
 
 export interface CheckoutConfig {
-  modeNatal: boolean;
-  dpPercent: number;
-  dpRound: number;
-  minLeadDays: number;
-  natalLeft: number;
+  settings: WebSettings;
+  shipping: WebShippingArea[];
+  /** Christmas campaign while the takeover is on: its products, boxes left and fulfil window. */
+  natal: { productIds: string[]; left: number; from: string; to: string } | null;
 }
 
 const CARD = "bg-white shadow-[0_1px_0_rgb(62_39_35/.08),0_10px_24px_rgb(62_39_35/.07)]";
@@ -33,15 +32,18 @@ const ERR = "text-[13px] font-semibold text-brand-wine";
 const EMPTY: CheckoutDetails = { name: "", whatsapp: "", method: "ambil", area: "", address: "", date: "", slot: PICKUP_SLOTS[0], note: "" };
 
 type Done = { ref: string; pay: string; wa: string; remaining: string; waHref: string | null };
+type Placed = { orderId: string; orderNo: string; token: string; total: number; payNow: number };
 
 export function CheckoutView({ config }: { config: CheckoutConfig }) {
-  const { items, setQty, clear, ready } = useCart();
+  const { items, setQty, clear, ready, product } = useCart();
+  const { settings: cfg, shipping } = config;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [d, setD] = useState<CheckoutDetails>(EMPTY);
   const [tried, setTried] = useState(false);
   const [plan, setPlan] = useState<PayPlan>("dp");
   const [via, setVia] = useState<"qris" | "transfer">("qris");
-  const [proof, setProof] = useState<{ url: string; name: string } | null>(null);
+  const [proof, setProof] = useState<{ url: string; name: string; file: File } | null>(null);
+  const [placed, setPlaced] = useState<Placed | null>(null);
   const [proofErr, setProofErr] = useState("");
   const [tried3, setTried3] = useState(false);
   const [copied, setCopied] = useState<"rek" | "amt" | null>(null);
@@ -49,25 +51,26 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
   const [done, setDone] = useState<Done | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const natal = config.modeNatal;
+  const natal = config.natal;
   const lines = useMemo(
     () => items.flatMap((c) => {
-      const p = productById(c.productId);
+      const p = product(c.productId);
       return p ? [{ ...c, key: lineKey(c), p }] : [];
     }),
-    [items],
+    [items, product],
   );
-  const natalCount = lines.reduce((s, l) => s + (NATAL_PRODUCT_IDS.includes(l.productId) ? l.qty : 0), 0);
-  const overQuota = natalCount > config.natalLeft;
+  const natalCount = natal ? lines.reduce((s, l) => s + (natal.productIds.includes(l.productId) ? l.qty : 0), 0) : 0;
+  const overQuota = natal != null && natalCount > natal.left;
+  const anyPending = lines.some((l) => l.p.pricePending);
 
-  const bounds = dateBounds(todayJakarta(), config.minLeadDays, natal ? { from: NATAL_2026.fulfilFrom, to: NATAL_2026.fulfilTo } : undefined);
+  const bounds = dateBounds(todayJakarta(), cfg.minLeadDays, natal ? { from: natal.from, to: natal.to } : undefined);
   const needAddress = d.method !== "ambil";
-  const areas = d.method === "ambil" ? [] : DELIVERY_AREAS[d.method];
+  const areas = d.method === "ambil" ? [] : shipping.filter((a) => a.method === d.method);
   const fee = d.method === "ambil" ? 0 : (areas.find((a) => a.area === d.area)?.fee ?? null);
   const errors: DetailErrors = validateDetails(d, bounds, fee);
   const sub = subtotal(lines.map((l) => ({ qty: l.qty, price: l.p.price })));
   const total = sub + (fee ?? 0);
-  const dp = dpAmount(total, config.dpPercent, config.dpRound);
+  const dp = dpAmount(total, cfg.dpPercent, cfg.dpRound);
   const effPlan: PayPlan = dp < total ? plan : "lunas";
   const now = payNow(total, dp, effPlan);
   const remaining = total - now;
@@ -81,6 +84,13 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
     setTimeout(() => setCopied(null), 1800);
   };
 
+  function minFee(m: DeliveryMethod) {
+    const fees = shipping.filter((a) => a.method === m).map((a) => a.fee);
+    return fees.length ? formatRupiah(Math.min(...fees)) : "–";
+  }
+  const bank = cfg.bankName ?? "BCA";
+  const accountName = cfg.bankAccountName ?? "Mami I Patisserie";
+
   const methods: [DeliveryMethod, string, IconName, string][] = natal
     ? [
         ["ambil", "Ambil sendiri", "storefront", "Di dapur Mami I, Bandung. Gratis."],
@@ -88,8 +98,8 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
       ]
     : [
         ["ambil", "Ambil sendiri", "storefront", "Di dapur Mami I, Bandung. Gratis."],
-        ["instan", "Kirim instan", "moped", "Bandung & Cimahi · mulai Rp 15.000"],
-        ["ekspedisi", "Ekspedisi", "local_shipping", "Luar kota · frozen & kue kering · mulai Rp 35.000"],
+        ["kirim_instan", "Kirim instan", "moped", `Bandung & Cimahi · mulai ${minFee("kirim_instan")}`],
+        ["ekspedisi", "Ekspedisi", "local_shipping", `Luar kota · frozen & kue kering · mulai ${minFee("ekspedisi")}`],
       ];
   const methodLabel = methods.find((m) => m[0] === d.method)?.[1] ?? "";
 
@@ -99,32 +109,51 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
     if (!file) return;
     if (!file.type.startsWith("image/")) return setProofErr("File harus berupa foto atau screenshot.");
     try {
-      // Preview only in stage 2; stage 4 uploads the compressed photo to the payment-proofs bucket.
       const url = URL.createObjectURL(file);
-      setProof({ url, name: file.name });
+      setProof({ url, name: file.name, file });
       setProofErr("");
     } catch {
       setProofErr("Foto tidak bisa dibuka. Coba file lain.");
     }
   }
 
+  // 1. place the order (database recomputes everything) → 2. upload the proof into its folder → 3. attach it.
+  // If the upload fails, the order stays placed and the shopper can retry with the same order.
   function submit() {
     if (!proof) return setTried3(true);
+    if (!cfg.ordersOpen) return setSubmitErr("Pemesanan online belum dibuka. Chat admin lewat WhatsApp, ya.");
     setSubmitErr("");
     startTransition(async () => {
-      const res = await placeWebOrder({ items: lines.map((l) => ({ productId: l.productId, qty: l.qty, note: l.note })), details: d, plan: effPlan, via });
-      if (!res.ok) return setSubmitErr(res.error);
-      const viaLabel = via === "qris" ? "QRIS" : `transfer ${site.payment.bank}`;
+      let order = placed;
+      if (!order) {
+        const res = await placeWebOrder({ items: lines.map((l) => ({ productId: l.productId, qty: l.qty, note: l.note })), details: d, plan: effPlan, via });
+        if (!res.ok) return setSubmitErr(res.error);
+        order = { orderId: res.orderId, orderNo: res.orderNo, token: res.token, total: res.total, payNow: res.payNow };
+        setPlaced(order);
+      }
+      try {
+        const blob = await compressImage(proof.file, 1600, 0.8);
+        const path = `web/${order.orderId}/${order.token}.jpg`;
+        const up = await createClient().storage.from("payment-proofs").upload(path, blob, { contentType: "image/jpeg", upsert: false });
+        if (up.error && !/exists/i.test(up.error.message)) throw up.error;
+        const att = await attachWebPayment(order.orderId, order.token, path);
+        if (!att.ok) return setSubmitErr(`Pesanan ${order.orderNo} sudah tercatat, tapi bukti belum terkirim: ${att.error}`);
+      } catch {
+        return setSubmitErr(`Pesanan ${order.orderNo} sudah tercatat, tapi bukti bayar gagal diupload. Coba kirim lagi, ya.`);
+      }
+      const viaLabel = via === "qris" ? "QRIS" : `transfer ${bank}`;
       const msg = [
         "Halo Mami I Patisserie, saya sudah pesan di website.",
-        `No. pesanan: ${res.ref}`,
+        `No. pesanan: ${order.orderNo}`,
         `Nama: ${d.name.trim()}`,
-        `Total: ${formatRupiah(total)}`,
-        `Sudah bayar ${effPlan === "lunas" ? "lunas" : "DP"} ${formatRupiah(res.payNow)} via ${viaLabel}, bukti sudah diupload.`,
+        `Total: ${formatRupiah(order.total)}`,
+        `Sudah bayar ${effPlan === "lunas" ? "lunas" : "DP"} ${formatRupiah(order.payNow)} via ${viaLabel}, bukti sudah diupload.`,
         "Terima kasih!",
       ].join("\n");
-      setDone({ ref: res.ref, pay: `${formatRupiah(res.payNow)} via ${viaLabel}`, wa: d.whatsapp, remaining: res.remaining > 0 ? formatRupiah(res.remaining) : "", waHref: waLink(msg) });
+      const rest = order.total - order.payNow;
+      setDone({ ref: order.orderNo, pay: `${formatRupiah(order.payNow)} via ${viaLabel}`, wa: d.whatsapp, remaining: rest > 0 ? formatRupiah(rest) : "", waHref: waLink(msg) });
       clear();
+      setPlaced(null);
       setStep(1);
       setD(EMPTY);
       setProof(null);
@@ -202,7 +231,7 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
                 <>
                   {overQuota && (
                     <div role="alert" className="bg-brand-wine-50 px-[18px] py-3.5 text-[15px] font-bold text-brand-wine">
-                      Sisa kuota hampers Natal tinggal {config.natalLeft} box. Kurangi jumlah di keranjang.
+                      Sisa kuota hampers Natal tinggal {natal?.left ?? 0} box. Kurangi jumlah di keranjang.
                     </div>
                   )}
                   {ready && lines.length === 0 && (
@@ -327,7 +356,7 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
                         </div>
                         {tried && errors.area && <span className={ERR}>Pilih area pengiriman</span>}
                         <span className="text-[13px] text-brand-muted">
-                          Tarif tetap per area. Di luar daftar ini, chat admin dulu via WhatsApp.{SHIPPING_IS_SAMPLE ? " (Tarif masih contoh.)" : ""}
+                          Tarif tetap per area. Di luar daftar ini, chat admin dulu via WhatsApp.{cfg.shippingIsSample ? " (Tarif masih contoh.)" : ""}
                         </span>
                       </div>
                     )}
@@ -432,7 +461,7 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3">
                       {(dp < total ? (["dp", "lunas"] as const) : (["lunas"] as const)).map((k) => (
                         <button key={k} type="button" aria-pressed={effPlan === k} onClick={() => setPlan(k)} className={`flex flex-col gap-1 rounded-[10px] p-4 text-left ${pick(effPlan === k)}`}>
-                          <span className="text-base font-bold">{k === "dp" ? `Bayar DP ${config.dpPercent}%` : "Bayar lunas"}</span>
+                          <span className="text-base font-bold">{k === "dp" ? `Bayar DP ${cfg.dpPercent}%` : "Bayar lunas"}</span>
                           <span className="font-display text-[22px] font-bold text-brand-wine tabular-nums">{formatRupiah(k === "dp" ? dp : total)}</span>
                           <span className="text-[13px] leading-snug text-brand-muted">{k === "dp" ? `Sisa ${formatRupiah(total - dp)} saat ambil atau sebelum kirim` : "Tidak ada tagihan lagi"}</span>
                         </button>
@@ -444,7 +473,7 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
                       {(
                         [
                           ["qris", "QRIS", "qr_code_2", "Semua m-banking & e-wallet"],
-                          ["transfer", `Transfer ${site.payment.bank}`, "account_balance", `a.n. ${site.payment.accountName}`],
+                          ["transfer", `Transfer ${bank}`, "account_balance", `a.n. ${accountName}`],
                         ] as const
                       ).map(([k, label, icon, subText]) => (
                         <button key={k} type="button" aria-pressed={via === k} onClick={() => setVia(k)} className={`flex items-center gap-3 rounded-[10px] p-4 text-left ${pick(via === k)}`}>
@@ -459,23 +488,29 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
 
                     {via === "qris" ? (
                       <div className="flex flex-wrap items-center gap-5 bg-brand-butter-100 p-[18px]">
-                        <div className="flex size-[180px] flex-none flex-col items-center justify-center gap-2 border-[1.5px] border-dashed border-brand-espresso/35 bg-white p-3 text-center">
-                          <Icon name="qr_code_2" size={56} />
-                          <span className="text-xs leading-snug text-brand-muted">Gambar QRIS asli Mami I dipasang di sini</span>
-                        </div>
+                        {cfg.qrisUrl ? (
+                          <div className="relative size-[180px] flex-none bg-white">
+                            <Image src={cfg.qrisUrl} alt="Kode QRIS Mami I" fill sizes="180px" className="object-contain" />
+                          </div>
+                        ) : (
+                          <div className="flex size-[180px] flex-none flex-col items-center justify-center gap-2 border-[1.5px] border-dashed border-brand-espresso/35 bg-white p-3 text-center">
+                            <Icon name="qr_code_2" size={56} />
+                            <span className="text-xs leading-snug text-brand-muted">Gambar QRIS asli Mami I dipasang di sini</span>
+                          </div>
+                        )}
                         <div className="flex flex-[1_1_220px] flex-col gap-2">
                           <span className="text-sm text-brand-muted">Scan pakai m-banking atau e-wallet apa pun, lalu bayar tepat:</span>
                           <span className="font-display text-[28px] font-bold tabular-nums">{formatRupiah(now)}</span>
-                          <span className="text-sm text-brand-muted">Atas nama {site.payment.accountName}</span>
+                          <span className="text-sm text-brand-muted">Atas nama {accountName}</span>
                         </div>
                       </div>
                     ) : (
                       <div className="flex flex-col bg-brand-butter-100 px-[18px] py-1.5">
                         {(
                           [
-                            ["Bank", site.payment.bank, null],
-                            ["No. rekening", site.payment.accountNumber ?? "menyusul", site.payment.accountNumber ? "rek" : null],
-                            ["Atas nama", site.payment.accountName, null],
+                            ["Bank", bank, null],
+                            ["No. rekening", cfg.bankAccountNo ?? "menyusul", cfg.bankAccountNo ? "rek" : null],
+                            ["Atas nama", accountName, null],
                             ["Nominal", formatRupiah(now), "amt"],
                           ] as const
                         ).map(([k, v, c], i) => (
@@ -485,7 +520,7 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
                             {c ? (
                               <button
                                 type="button"
-                                onClick={() => copy(c === "rek" ? site.payment.accountNumber! : String(now), c)}
+                                onClick={() => copy(c === "rek" ? cfg.bankAccountNo! : String(now), c)}
                                 className="min-h-10 rounded-full border-[1.5px] border-brand-espresso/30 bg-white px-3.5 text-sm font-bold"
                               >
                                 {copied === c ? "Tersalin" : "Salin"}
@@ -532,8 +567,13 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
                       </span>
                     )}
 
-                    <button type="button" onClick={submit} disabled={pending} className={buttonClass({ className: `min-h-[58px] text-[17px] ${proof ? "" : "opacity-55"}` })}>
-                      <Icon name="lock" size={22} /> {pending ? "Mengirim…" : `Kirim pesanan · ${formatRupiah(now)}`}
+                    {!cfg.ordersOpen && (
+                      <p role="status" className="rounded-[10px] bg-brand-wine-50 px-4 py-3 text-sm font-semibold text-brand-wine">
+                        Pemesanan online belum dibuka. Untuk sekarang, pesan lewat admin di WhatsApp, ya.
+                      </p>
+                    )}
+                    <button type="button" onClick={submit} disabled={pending || !cfg.ordersOpen} className={buttonClass({ className: `min-h-[58px] text-[17px] ${proof ? "" : "opacity-55"}` })}>
+                      <Icon name="lock" size={22} /> {pending ? "Mengirim…" : placed ? `Kirim ulang bukti · ${placed.orderNo}` : `Kirim pesanan · ${formatRupiah(now)}`}
                     </button>
                     <span className="text-center text-sm leading-normal text-brand-muted">Pesanan terkunci setelah admin mengecek bukti bayar. Konfirmasi dikirim via WhatsApp.</span>
                   </div>
@@ -564,7 +604,7 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
                   <span>Total</span>
                   <span className="tabular-nums">{formatRupiah(total)}</span>
                 </div>
-                {PRICES_ARE_SAMPLE && <span className="text-xs text-brand-muted">Harga masih contoh, belum final.</span>}
+                {anyPending && <span className="text-xs text-brand-muted">Harga masih contoh, belum final.</span>}
               </div>
               {step === 3 && (
                 <div className="flex flex-col gap-1.5 bg-brand-butter-100 p-3.5 text-[15px]">
@@ -580,10 +620,10 @@ export function CheckoutView({ config }: { config: CheckoutConfig }) {
               )}
               <div className="flex flex-col gap-2.5 text-sm leading-normal text-brand-muted">
                 <span className="flex gap-2">
-                  <Icon name="lock" size={18} /> Bayar DP {config.dpPercent}% atau lunas, pilih di langkah Bayar.
+                  <Icon name="lock" size={18} /> Bayar DP {cfg.dpPercent}% atau lunas, pilih di langkah Bayar.
                 </span>
                 <span className="flex gap-2">
-                  <Icon name="qr_code_2" size={18} /> QRIS atau transfer {site.payment.bank}, lalu upload bukti.
+                  <Icon name="qr_code_2" size={18} /> QRIS atau transfer {bank}, lalu upload bukti.
                 </span>
                 <span className="flex gap-2">
                   <Icon name="local_shipping" size={18} /> Ongkir tarif tetap per area.

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Icon, StripeDivider } from "@/components/brand";
-import { PRICES_ARE_SAMPLE, productById } from "@/content/catalog";
 import { instagramUrl, site } from "@/content/site";
 import { formatRupiah } from "@/lib/format";
 import { lineKey } from "@/lib/site/cart";
@@ -113,7 +112,7 @@ function MenuDrawer({ modeNatal, onClose }: { modeNatal: boolean; onClose: () =>
 }
 
 function CartDrawer({ onClose }: { onClose: () => void }) {
-  const { items, count, setQty } = useCart();
+  const { items, count, setQty, product } = useCart();
   return (
     <div className="fixed inset-0 z-[100] flex justify-end bg-brand-espresso/45" onClick={onClose}>
       <aside role="dialog" aria-label="Keranjang" onClick={(e) => e.stopPropagation()} className="flex h-full w-[420px] max-w-full flex-col bg-brand-butter-50 text-brand-espresso shadow-[-20px_0_50px_rgb(62_39_35/.25)]">
@@ -133,11 +132,9 @@ function CartDrawer({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             items.map((c) => {
-              const p = productById(c.productId);
+              const p = product(c.productId);
               if (!p) return null;
               const key = lineKey(c);
-              // As in the design: only the Christmas packages show a (sample) price before checkout.
-              const priced = !PRICES_ARE_SAMPLE || p.category === "natal";
               return (
                 <div key={key} className="grid grid-cols-[72px_1fr] items-center gap-3.5 bg-white p-3 shadow-[0_1px_0_rgb(62_39_35/.08),0_6px_16px_rgb(62_39_35/.06)]">
                   <div className="photo-slot size-[72px]" />
@@ -150,7 +147,7 @@ function CartDrawer({ onClose }: { onClose: () => void }) {
                     </div>
                     <div className="flex items-center justify-between">
                       <QtyStepper qty={c.qty} onChange={(q) => setQty(key, q)} size="sm" />
-                      <span className="font-script text-[17px] text-brand-muted">{priced ? formatRupiah(p.price * c.qty) : "harga menyusul"}</span>
+                      <span className="font-script text-[17px] text-brand-muted">{p.showPrice ? formatRupiah(p.price * c.qty) : "harga menyusul"}</span>
                     </div>
                   </div>
                 </div>

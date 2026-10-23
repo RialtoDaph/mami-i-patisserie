@@ -1,14 +1,14 @@
 import Image from "next/image";
 import { Icon, Script } from "@/components/brand";
-import { CAFE_FEATURED, CAFE_MENU, DRINKS, HAMPERS_BOXES, productById, productsIn } from "@/content/catalog";
+import { CAFE_FEATURED, CAFE_MENU, DRINKS, HAMPERS_BOXES } from "@/content/catalog";
+import { bySlug, type SiteData } from "@/lib/site/data";
 import { waLink } from "@/lib/site/wa";
 import { AddButton, AutoVideo } from "../bits";
-import { Breadcrumb, WaButton } from "../ui";
+import { Breadcrumb, PriceTag, WaButton } from "../ui";
 import { MenuFilter } from "./MenuFilter";
 
 const H2 = "font-display text-[clamp(30px,7.5vw,44px)] leading-none font-bold";
 const SECTION = "px-page flex scroll-mt-[140px] flex-col gap-8 py-[clamp(52px,9vw,72px)]";
-const HARGA = <span className="font-script text-[17px] text-brand-muted">harga menyusul</span>;
 
 function Head({ script, title, aside, light }: { script: string; title: string; aside: React.ReactNode; light?: boolean }) {
   return (
@@ -24,7 +24,8 @@ function Head({ script, title, aside, light }: { script: string; title: string; 
   );
 }
 
-export function MenuPage() {
+export function MenuPage({ data }: { data: SiteData }) {
+  const inCat = (c: string) => data.products.filter((p) => p.category === c);
   const pastry = (
     <section id="pastry" className={SECTION}>
       <Head
@@ -37,10 +38,10 @@ export function MenuPage() {
         }
       />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(max(150px,calc((100%-72px)/4)),1fr))] gap-[clamp(14px,2.5vw,24px)]">
-        {productsIn("pastry").map((p) => (
+        {inCat("pastry").map((p) => (
           <article key={p.id} className="group flex flex-col gap-3 bg-white px-3 pt-3 pb-4 shadow-postcard transition-[transform,box-shadow] duration-200 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_rgb(62_39_35/.18)]">
             <div className="relative aspect-[4/5] overflow-hidden bg-brand-butter-100">
-              <Image src={p.img!} alt={p.name} fill sizes="(max-width: 760px) 50vw, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
+              <Image src={p.img ?? "/images/croissant.jpg"} alt={p.name} fill sizes="(max-width: 760px) 50vw, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
             </div>
             <div className="flex flex-1 flex-col gap-1.5 px-1">
               <span className="font-display text-[19px] leading-[1.2] font-bold">{p.name}</span>
@@ -48,7 +49,7 @@ export function MenuPage() {
             </div>
             <div className="flex items-baseline gap-2 px-1">
               <span aria-hidden className="flex-1 -translate-y-1 border-b-2 border-dotted border-brand-espresso/35" />
-              {HARGA}
+              <PriceTag product={p} />
             </div>
             <AddButton productId={p.id} block />
           </article>
@@ -69,16 +70,16 @@ export function MenuPage() {
         }
       />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] gap-6">
-        {productsIn("frozen").map((p) => (
+        {inCat("frozen").map((p) => (
           <article key={p.id} className="group grid grid-cols-[minmax(96px,130px)_minmax(0,1fr)] gap-5 bg-brand-butter-50 p-3.5 shadow-[0_2px_0_rgb(62_39_35/.08),0_14px_30px_rgb(62_39_35/.08)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_rgb(62_39_35/.18)]">
             <div className="relative aspect-square overflow-hidden bg-brand-butter-100">
-              <Image src={p.img!} alt={p.name} fill sizes="130px" className="object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
+              <Image src={p.img ?? "/images/risol-frozen.jpg"} alt={p.name} fill sizes="130px" className="object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
             </div>
             <div className="flex min-w-0 flex-col gap-2">
               <span className="font-display text-[22px] leading-[1.15] font-bold">{p.name}</span>
               <span className="text-sm leading-normal text-brand-muted">{p.desc}</span>
               <div className="mt-auto flex flex-wrap items-center justify-between gap-2.5">
-                {HARGA}
+                <PriceTag product={p} />
                 <AddButton productId={p.id} size="sm" />
               </div>
             </div>
@@ -88,16 +89,17 @@ export function MenuPage() {
     </section>
   );
 
-  const sig = productById("signature-recipe")!;
-  const box = productById("blessings-box")!;
+  const sig = bySlug(data.products, "signature-recipe");
+  const box = bySlug(data.products, "blessings-box");
   const boxItems = HAMPERS_BOXES[0].items;
   const hampers = (
     <section id="hampers" className={`${SECTION} bg-brand-wine text-brand-butter`}>
       <Head script="untuk hadiah" title="Hampers" light aside={<span className="text-[15px] text-brand-butter-50">Preorder Lebaran 2027 · 15 Jan – 3 Mar</span>} />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] gap-6">
+        {sig && (
         <article className="group flex flex-col gap-4 bg-brand-butter-50 p-4 text-brand-espresso transition-[transform,box-shadow] duration-200 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_rgb(62_39_35/.18)]">
           <div className="relative aspect-[16/10] overflow-hidden bg-brand-butter-100">
-            <Image src={sig.img!} alt="Box hampers kue kering" fill sizes="(max-width: 760px) 90vw, 580px" className="object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
+            <Image src={sig.img ?? "/images/hampers-kue-kering.jpg"} alt="Box hampers kue kering" fill sizes="(max-width: 760px) 90vw, 580px" className="object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
           </div>
           <div className="flex flex-1 flex-col gap-2 px-2">
             <span className="text-xs font-bold tracking-[.2em] text-brand-wine uppercase">Hampers kue kering</span>
@@ -105,14 +107,16 @@ export function MenuPage() {
             <span className="text-base leading-[1.55] text-brand-muted">{sig.desc}</span>
           </div>
           <div className="flex items-center justify-between gap-3 px-2 pb-2">
-            <span className="font-script text-lg text-brand-muted">harga menyusul</span>
+            <PriceTag product={sig} className="text-lg" />
             <AddButton productId={sig.id} />
           </div>
         </article>
+        )}
+        {box && (
         <article className="group flex flex-col gap-4 bg-brand-butter-50 p-4 text-brand-espresso transition-[transform,box-shadow] duration-200 hover:-translate-y-1.5 hover:shadow-[0_22px_40px_rgb(62_39_35/.18)]">
           <div className="relative aspect-[16/10] overflow-hidden bg-brand-butter-100">
-            <Image src={box.img!} alt="Blessings Box + kartu ucapan" fill sizes="(max-width: 760px) 90vw, 580px" className="object-cover" />
-            <AutoVideo src="/video/blessings-box.mp4" poster={box.img!} className="absolute inset-0 size-full object-cover" />
+            <Image src={box.img ?? "/images/blessings-box.jpg"} alt="Blessings Box + kartu ucapan" fill sizes="(max-width: 760px) 90vw, 580px" className="object-cover" />
+            <AutoVideo src="/video/blessings-box.mp4" poster={box.img ?? "/images/blessings-box.jpg"} className="absolute inset-0 size-full object-cover" />
           </div>
           <div className="flex flex-1 flex-col gap-2 px-2">
             <span className="text-xs font-bold tracking-[.2em] text-brand-wine uppercase">Paket silaturahmi calon mertua</span>
@@ -127,10 +131,11 @@ export function MenuPage() {
             <span className="mt-1.5 font-script text-lg leading-[1.35]">+ kartu ucapan: “Bawa martabak sudah biasa…”</span>
           </div>
           <div className="flex items-center justify-between gap-3 px-2 pb-2">
-            <span className="font-script text-lg text-brand-muted">harga menyusul</span>
+            <PriceTag product={box} className="text-lg" />
             <AddButton productId={box.id} />
           </div>
         </article>
+        )}
       </div>
     </section>
   );
@@ -252,9 +257,9 @@ export function MenuPage() {
       </section>
       <MenuFilter
         sections={[
-          { id: "pastry", label: "Pastry", count: productsIn("pastry").length, node: pastry },
-          { id: "frozen", label: "Frozen", count: productsIn("frozen").length, node: frozen },
-          { id: "hampers", label: "Hampers", count: productsIn("hampers").length, node: hampers },
+          { id: "pastry", label: "Pastry", count: inCat("pastry").length, node: pastry },
+          { id: "frozen", label: "Frozen", count: inCat("frozen").length, node: frozen },
+          { id: "hampers", label: "Hampers", count: [sig, box].filter(Boolean).length, node: hampers },
           { id: "kafe", label: "Di kafe", count: DRINKS.length + 1, node: kafe },
         ]}
       />

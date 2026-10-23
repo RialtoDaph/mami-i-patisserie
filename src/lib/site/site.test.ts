@@ -52,7 +52,7 @@ describe("checkout", () => {
     expect(dateBounds("2026-12-19", 2, { from: "2026-12-20", to: "2026-12-24" })).toEqual({ min: "2026-12-21", max: "2026-12-24" });
   });
   it("validates details", () => {
-    const ok: CheckoutDetails = { name: "Rina", whatsapp: "0812-3456-7890", method: "instan", area: "Cimahi", address: "Jl. A", date: "2026-10-25", slot: "", note: "" };
+    const ok: CheckoutDetails = { name: "Rina", whatsapp: "0812-3456-7890", method: "kirim_instan", area: "Cimahi", address: "Jl. A", date: "2026-10-25", slot: "", note: "" };
     const b = { min: "2026-10-24", max: null };
     expect(validateDetails(ok, b, 30_000)).toEqual({});
     expect(validateDetails({ ...ok, name: " ", whatsapp: "12345", date: "2026-10-23", address: "" }, b, null)).toEqual({

@@ -25,6 +25,7 @@ describe("DP", () => {
     expect(suggestedDp(328000, 33)).toBe(109000); // 108.240 → 109.000
     expect(suggestedDp(500, 50)).toBe(500); // capped at total
     expect(suggestedDp(100000, 0)).toBe(0);
+    expect(suggestedDp(520000, 40, 50000)).toBe(250000); // 208.000 → 250.000 (website rule)
     expect(suggestedDp(0, 50)).toBe(0);
     expect(suggestedDp(300000, 100)).toBe(300000);
   });

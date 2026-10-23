@@ -1,11 +1,8 @@
 "use server";
 
-import { productById } from "@/content/catalog";
-import { NATAL_2026 } from "@/content/campaigns";
-import { DELIVERY_AREAS, type DeliveryMethod } from "@/content/shipping";
-import { todayJakarta } from "@/lib/preorder/dates";
-import { dateBounds, dpAmount, payNow, subtotal, validateDetails, type CheckoutDetails, type PayPlan } from "./checkout";
-import { getSiteConfig } from "./config";
+import { site } from "@/content/site";
+import type { CheckoutDetails, PayPlan } from "./checkout";
+import { anonClient } from "./data";
 
 export interface WebOrderInput {
   items: { productId: string; qty: number; note: string }[];
@@ -14,27 +11,47 @@ export interface WebOrderInput {
   via: "qris" | "transfer";
 }
 
-export type WebOrderResult = { ok: true; ref: string; payNow: number; remaining: number } | { ok: false; error: string };
+export type WebOrderResult =
+  | { ok: true; orderId: string; orderNo: string; token: string; total: number; payNow: number }
+  | { ok: false; error: string };
 
-/**
- * Places a website order. Totals are recomputed here from the catalog; nothing from the browser is trusted.
- * STAGE 2: the orders table / proof upload are wired in stage 4. Until then this only answers in development
- * (DEMO reference) and refuses in production, so nobody thinks an order went through.
- */
+/** Database rule messages are written for shoppers (Bahasa Indonesia); anything else gets a generic message. */
+function friendly(e: { code?: string; message: string }): string {
+  if (e.code === "23514" || e.code === "42501") return e.message.replace(/^PENUH: /, "Maaf, kuota penuh: ");
+  console.error("web order failed", e);
+  return "Pesanan belum bisa dikirim. Coba lagi sebentar, ya.";
+}
+
+/** Places a website order. Prices, fees, DP and quotas are all recomputed by place_web_order in the database. */
 export async function placeWebOrder(input: WebOrderInput): Promise<WebOrderResult> {
-  const cfg = getSiteConfig();
-  const lines = input.items.map((i) => ({ product: productById(i.productId), qty: Math.floor(i.qty) }));
-  if (!lines.length || lines.some((l) => !l.product || !(l.qty > 0))) return { ok: false, error: "Keranjang tidak valid. Muat ulang halaman, ya." };
+  const sb = anonClient();
+  if (!sb) return { ok: false, error: "Server belum tersambung." };
+  const d = input.details;
+  const { data, error } = await sb.rpc("place_web_order", {
+    p: {
+      name: d.name,
+      whatsapp: d.whatsapp,
+      method: d.method,
+      area: d.method === "ambil" ? null : d.area,
+      address: d.method === "ambil" ? null : d.address,
+      date: d.date,
+      slot: d.method === "ambil" ? d.slot : null,
+      note: d.note,
+      pay_mode: input.plan,
+      pay_method: input.via,
+      include_dummy: site.showDummy,
+      items: input.items.map((i) => ({ product_id: i.productId, qty: i.qty, card_note: i.note })),
+    },
+  });
+  if (error) return { ok: false, error: friendly(error) };
+  const r = data as Record<string, unknown>;
+  return { ok: true, orderId: String(r.order_id), orderNo: String(r.order_no), token: String(r.token), total: Number(r.total), payNow: Number(r.pay_now) };
+}
 
-  const method: DeliveryMethod = input.details.method;
-  const fee = method === "ambil" ? 0 : (DELIVERY_AREAS[method].find((a) => a.area === input.details.area)?.fee ?? null);
-  const window = cfg.modeNatal ? { from: NATAL_2026.fulfilFrom, to: NATAL_2026.fulfilTo } : undefined;
-  const errors = validateDetails(input.details, dateBounds(todayJakarta(), cfg.minLeadDays, window), fee);
-  if (Object.keys(errors).length) return { ok: false, error: "Data pemesan belum lengkap." };
-
-  const total = subtotal(lines.map((l) => ({ qty: l.qty, price: l.product!.price }))) + (fee ?? 0);
-  const now = payNow(total, dpAmount(total, cfg.dpPercent, cfg.dpRound), input.plan);
-
-  if (process.env.NODE_ENV === "production") return { ok: false, error: "Pemesanan online belum dibuka. Chat admin lewat WhatsApp, ya." };
-  return { ok: true, ref: `DEMO-${String(Date.now()).slice(-5)}`, payNow: now, remaining: total - now };
+/** Links the uploaded proof (payment-proofs/web/<order>/<token>…) to the order as a pending payment. */
+export async function attachWebPayment(orderId: string, token: string, path: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sb = anonClient();
+  if (!sb) return { ok: false, error: "Server belum tersambung." };
+  const { error } = await sb.rpc("attach_web_payment", { p_order_id: orderId, p_token: token, p_path: path });
+  return error ? { ok: false, error: friendly(error) } : { ok: true };
 }

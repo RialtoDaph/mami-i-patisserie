@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/brand";
+import { formatRupiah } from "@/lib/format";
+import type { WebProduct } from "@/lib/site/types";
 import { WA_ASK, waLink } from "@/lib/site/wa";
 
 /** Beranda › Current. `light` = on wine/natal backgrounds. */
@@ -44,5 +46,14 @@ export function Section({ id, className, children }: { id?: string; className?: 
     <section id={id} className={`px-page scroll-mt-[72px] py-[clamp(52px,8vw,88px)] ${className ?? ""}`}>
       {children}
     </section>
+  );
+}
+
+/** Card price: Libre Baskerville amount, or "harga menyusul" in Kalam while the price is not final. */
+export function PriceTag({ product, className }: { product: WebProduct; className?: string }) {
+  return product.showPrice ? (
+    <span className={`font-display text-[15px] font-bold whitespace-nowrap tabular-nums ${className ?? ""}`}>{formatRupiah(product.price)}</span>
+  ) : (
+    <span className={`font-script text-[17px] whitespace-nowrap text-brand-muted ${className ?? ""}`}>harga menyusul</span>
   );
 }
