@@ -8,7 +8,6 @@ import {
   type OrderStatus,
 } from "@/lib/preorder";
 import { formatPercent, formatRupiah } from "@/lib/format";
-import { PageHeader } from "@/components/ui";
 import { ProductionDay } from "@/components/ProductionDay";
 import { StatusBadge } from "@/components/preorder";
 
@@ -68,10 +67,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   if (!can(user.role, "dashboard.view")) {
     return (
-      <>
-        <PageHeader title={`Halo${user.fullName ? `, ${user.fullName}` : ""}!`} />
-        {production}
-      </>
+      <>{production}</>
     );
   }
 
@@ -83,8 +79,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <PageHeader title="Dashboard" />
-      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="-mx-3.5 mb-4 flex gap-2 overflow-x-auto px-3.5 pb-1">
         <Link href="/app" className={!campaign ? "chip-on" : "chip-off"}>Semua</Link>
         {pre.campaigns.map((c) => (
           <Link key={c.id} href={`/app?kampanye=${c.id}`} className={campaign?.id === c.id ? "chip-on" : "chip-off"}>{c.name}</Link>

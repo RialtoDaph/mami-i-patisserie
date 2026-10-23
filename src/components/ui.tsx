@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { HppStatus } from "@/lib/costing";
 import { formatPercent } from "@/lib/format";
+import { Icon } from "@/components/brand";
 
+/** Section title inside an app page (the shell header already shows the tab title). */
 export function PageHeader({
   title,
   back,
@@ -14,11 +16,11 @@ export function PageHeader({
   return (
     <header className="mb-4 flex items-center gap-2">
       {back && (
-        <Link href={back} className="-ml-2 flex min-h-12 min-w-12 items-center justify-center rounded-xl text-2xl text-cocoa" aria-label="Kembali">
-          ←
+        <Link href={back} className="-ml-2 flex min-h-11 min-w-11 items-center justify-center rounded-md text-brand-espresso hover:bg-brand-butter" aria-label="Kembali">
+          <Icon name="arrow_back" size={24} />
         </Link>
       )}
-      <h1 className="flex-1 text-2xl font-bold text-cocoa">{title}</h1>
+      <h2 className="flex-1 font-display text-xl font-bold text-brand-espresso">{title}</h2>
       {action}
     </header>
   );

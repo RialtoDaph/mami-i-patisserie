@@ -27,12 +27,17 @@ interface OrderRow {
   fulfill_method: FulfillMethod; delivery_address: string | null; status: OrderStatus; subtotal: Num;
   shipping_fee: Num; discount: Num; total: Num; dp_amount: Num; amount_paid: Num; notes: string | null;
   created_at: string; is_dummy: boolean;
-  order_items: { product_id: string; qty: number; unit_price: Num; unit_cost: Num | null; sort_order: number }[];
+  channel: "admin" | "web"; delivery_area: string | null; pickup_slot: string | null; pay_mode: "dp" | "lunas" | null;
+  order_items: { product_id: string; qty: number; unit_price: Num; unit_cost: Num | null; card_note: string | null; sort_order: number }[];
 }
-interface PaymentRow { id: string; amount: Num; method: PaymentMethod; proof_path: string | null; paid_at: string; note: string | null }
+interface PaymentRow {
+  id: string; amount: Num; method: PaymentMethod; proof_path: string | null; paid_at: string; note: string | null;
+  status: "pending" | "matched" | "rejected";
+}
 interface SettingsRow {
   business_name: string; business_whatsapp: string | null; bank_name: string | null; bank_account_no: string | null;
   bank_account_name: string | null; qris_note: string | null; pickup_address: string | null; default_dp_percent: Num;
+  dp_round?: Num;
 }
 
 export interface ProductFull extends Product { isDummy: boolean; webCategory: WebCategory }
@@ -63,14 +68,15 @@ const mapOrder = (r: OrderRow): OrderFull => ({
   fulfillMethod: r.fulfill_method, deliveryAddress: r.delivery_address, status: r.status, subtotal: num(r.subtotal),
   shippingFee: num(r.shipping_fee), discount: num(r.discount), total: num(r.total), dpAmount: num(r.dp_amount),
   amountPaid: num(r.amount_paid), notes: r.notes, createdAt: r.created_at, isDummy: r.is_dummy,
+  channel: r.channel, deliveryArea: r.delivery_area, pickupSlot: r.pickup_slot, payMode: r.pay_mode,
   items: [...r.order_items].sort((a, b) => a.sort_order - b.sort_order)
-    .map((i) => ({ productId: i.product_id, qty: i.qty, unitPrice: num(i.unit_price), unitCost: numOrNull(i.unit_cost) })),
+    .map((i) => ({ productId: i.product_id, qty: i.qty, unitPrice: num(i.unit_price), unitCost: numOrNull(i.unit_cost), cardNote: i.card_note })),
 });
 
 const mapSettings = (r: SettingsRow): Settings => ({
   businessName: r.business_name, businessWhatsapp: r.business_whatsapp, bankName: r.bank_name,
   bankAccountNo: r.bank_account_no, bankAccountName: r.bank_account_name, qrisNote: r.qris_note,
-  pickupAddress: r.pickup_address, defaultDpPercent: num(r.default_dp_percent),
+  pickupAddress: r.pickup_address, defaultDpPercent: num(r.default_dp_percent), dpRound: r.dp_round == null ? 50000 : num(r.dp_round),
 });
 
 export interface PreorderData {
@@ -88,7 +94,7 @@ export const loadPreorderData = cache(async (): Promise<PreorderData> => {
     supabase.from("products").select("*").order("name"),
     supabase.from("campaigns").select("*, campaign_products(product_id, price_override)").order("preorder_open", { ascending: false }),
     supabase.from("customers").select("*").order("name"),
-    supabase.from("orders").select("*, order_items(product_id, qty, unit_price, unit_cost, sort_order)").order("fulfill_date").order("order_no"),
+    supabase.from("orders").select("*, order_items(product_id, qty, unit_price, unit_cost, card_note, sort_order)").order("fulfill_date").order("order_no"),
     supabase.from("settings").select("*").maybeSingle(),
   ]);
   const error = p.error ?? c.error ?? cu.error ?? o.error ?? s.error;
@@ -100,7 +106,7 @@ export const loadPreorderData = cache(async (): Promise<PreorderData> => {
     orders: (o.data as OrderRow[]).map(mapOrder),
     settings: s.data ? mapSettings(s.data as SettingsRow) : mapSettings({
       business_name: "Mami I Pâtisserie", business_whatsapp: null, bank_name: null, bank_account_no: null,
-      bank_account_name: null, qris_note: null, pickup_address: null, default_dp_percent: 50,
+      bank_account_name: null, qris_note: null, pickup_address: null, default_dp_percent: 40,
     }),
   };
 });
@@ -113,7 +119,7 @@ export interface PaymentWithUrl extends Payment {
 export async function loadPayments(orderId: string): Promise<PaymentWithUrl[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("payments").select("id, amount, method, proof_path, paid_at, note")
+    .from("payments").select("id, amount, method, proof_path, paid_at, note, status")
     .eq("order_id", orderId).order("paid_at");
   if (error) throw new Error(`Gagal memuat pembayaran: ${error.message}`);
   const rows = data as PaymentRow[];
@@ -124,7 +130,7 @@ export async function loadPayments(orderId: string): Promise<PaymentWithUrl[]> {
     for (const u of urls ?? []) if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl);
   }
   return rows.map((r) => ({
-    id: r.id, amount: num(r.amount), method: r.method, proofPath: r.proof_path, paidAt: r.paid_at, note: r.note,
+    id: r.id, amount: num(r.amount), method: r.method, proofPath: r.proof_path, paidAt: r.paid_at, note: r.note, status: r.status,
     proofUrl: r.proof_path ? signed.get(r.proof_path) ?? null : null,
   }));
 }
@@ -132,5 +138,6 @@ export async function loadPayments(orderId: string): Promise<PaymentWithUrl[]> {
 /** Public URL of a product photo (bucket is public). */
 export function productPhotoUrl(path: string | null): string | null {
   if (!path) return null;
+  if (path.startsWith("/")) return path; // site image (public/images)
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-photos/${path}`;
 }

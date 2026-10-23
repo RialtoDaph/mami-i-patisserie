@@ -143,6 +143,22 @@ export async function addPayment(input: PaymentInput): Promise<ActionResult> {
   return {};
 }
 
+/** Website proof checked by staff: "Bukti cocok" counts it as paid (status advances), "Tolak" ignores it. */
+export async function reviewPayment(id: string, status: "matched" | "rejected"): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const { data, error } = await supabase
+    .from("payments")
+    .update({ status, matched_by: claims?.claims?.sub ?? null, matched_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "pending")
+    .select("id");
+  if (error) return { error: friendlyError(error) };
+  if (!data?.length) return { error: "Bukti ini sudah dicek, atau Anda tidak punya akses." };
+  refresh();
+  return {};
+}
+
 export async function deletePayment(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("payments").delete().eq("id", id).select("proof_path");

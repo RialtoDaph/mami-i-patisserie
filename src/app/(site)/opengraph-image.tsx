@@ -10,7 +10,7 @@ export const contentType = "image/png";
 export default async function Image() {
   const serif = await readFile(
     // EB Garamond: Cormorant's composite accent glyphs render misplaced in the OG renderer.
-    join(process.cwd(), "node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-600-normal.woff"),
+    join(process.cwd(), "node_modules/@fontsource/libre-baskerville/files/libre-baskerville-latin-700-normal.woff"),
   );
   return new ImageResponse(
     (
@@ -22,7 +22,7 @@ export default async function Image() {
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 90px" }}>
           <div style={{ fontSize: 30, color: "#3e2723", letterSpacing: 6 }}>BANDUNG</div>
-          <div style={{ fontFamily: "Garamond", fontSize: 112, color: "#3e2723", lineHeight: 1.05 }}>Mami I Pâtisserie</div>
+          <div style={{ fontFamily: "Libre Baskerville", fontSize: 96, color: "#3e2723", lineHeight: 1.05 }}>Mami I Pâtisserie</div>
           <div style={{ fontSize: 38, color: "#3e2723", marginTop: 20 }}>Resep warisan Mami, 24 tahun · Pesan via WhatsApp</div>
         </div>
         <div style={{ display: "flex", height: 70, background: "#a2a672", alignItems: "center", padding: "0 90px", color: "#3e2723", fontSize: 30 }}>
@@ -30,6 +30,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size, fonts: [{ name: "Garamond", data: serif, style: "normal", weight: 600 }] },
+    { ...size, fonts: [{ name: "Libre Baskerville", data: serif, style: "normal", weight: 700 }] },
   );
 }

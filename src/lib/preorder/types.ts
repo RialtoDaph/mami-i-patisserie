@@ -62,6 +62,8 @@ export interface OrderItem {
   unitPrice: number;
   /** HPP per product unit when the order was saved; null/absent = not stored. */
   unitCost?: number | null;
+  /** Greeting card text (website hampers). */
+  cardNote?: string | null;
 }
 
 export interface Payment {
@@ -71,6 +73,8 @@ export interface Payment {
   proofPath: string | null;
   paidAt: string;
   note: string | null;
+  /** pending = proof uploaded on the website, not checked yet (does not count as paid). */
+  status?: "pending" | "matched" | "rejected";
 }
 
 export interface Order {
@@ -91,6 +95,11 @@ export interface Order {
   notes: string | null;
   createdAt: string;
   items: OrderItem[];
+  /** Website orders: 'web'. */
+  channel?: "admin" | "web";
+  deliveryArea?: string | null;
+  pickupSlot?: string | null;
+  payMode?: "dp" | "lunas" | null;
 }
 
 export interface Settings {
@@ -102,4 +111,6 @@ export interface Settings {
   qrisNote: string | null;
   pickupAddress: string | null;
   defaultDpPercent: number;
+  /** DP is rounded up to a multiple of this (Rp 50.000 per the 2026-10 decisions). */
+  dpRound?: number;
 }
