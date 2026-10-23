@@ -100,11 +100,13 @@ Context for every Claude Code session working on this repository. Read this firs
   (`/app/pelanggan`, `/app/produk`, `/app/campaign`, `/app/pengaturan`). CSV: `/app/costing/export`, `/app/order/export`.
 - Public site (redesign 2026-10): route group `src/app/(site)` (`/`, `/menu`, `/hampers`, `/tentang`, `/faq`, `/kontak`,
   `/keranjang` = 3-step checkout; `/katalog` redirects to `/menu`). Page bodies in `src/components/site/pages`, header/
-  drawers/footer in `src/components/site`. Static content until stage 4: `src/content/catalog.ts` (products, SAMPLE prices),
-  `campaigns.ts`, `shipping.ts` (SAMPLE fees), `site.ts` (contact/payment PLACEHOLDERs). Pure logic + tests in `src/lib/site`
-  (cart, checkout: DP/date rules); settings in `src/lib/site/config.ts` (env `NEXT_PUBLIC_MODE_NATAL=0` turns the Christmas
-  takeover off, `NEXT_PUBLIC_SNOW=hero|semua|mati`, until the settings table holds them). `placeWebOrder` is a stub: DEMO ref in
-  dev, refuses in production. Motion layer (snow, lights, Natal intro, tilt+glare, scroll reveal, fly-to-cart) lives in
+  drawers/footer in `src/components/site`. Data (stage 4): `src/lib/site/data.ts` (`loadSiteData`, server-only, React cache)
+  calls the anon RPCs `public_settings`, `public_catalog`, `public_campaigns`, `public_shipping_areas`; on error it falls
+  back to empty data with orders closed. Pages revalidate every 60 s. `src/content/catalog.ts` is presentation only (box
+  contents, cafe menu, keyed by product slug); `campaigns.ts` (date formatting), `shipping.ts` (pickup slots), `site.ts`
+  (contact PLACEHOLDERs). Pure logic + tests in `src/lib/site` (cart, checkout: DP/date rules). Checkout: `orderActions.ts`
+  `placeWebOrder` → RPC `place_web_order`, proof photo uploaded by the browser to `payment-proofs/web/<order_id>/<token>.jpg`,
+  then `attachWebPayment` → RPC `attach_web_payment` (payment status `pending` until staff tap "Bukti cocok"). Motion layer (snow, lights, Natal intro, tilt+glare, scroll reveal, fly-to-cart) lives in
   `src/components/site/SiteMotion.tsx`; pages only mark elements (`data-tilt`, `data-glare`, `data-twinkle`, `#nt-*`).
   Everything is skipped under prefers-reduced-motion. Snow follows the snow setting, independent of mode Natal (as in the prototype).
 - Preorder data is loaded whole per request; revisit with pagination/server filters if orders grow to thousands.
@@ -121,6 +123,8 @@ Context for every Claude Code session working on this repository. Read this firs
 - Supabase project "Mami i Patiserrie" (ref `mxkmavpebiawiknnbxam`, eu-west-1). Migrations
   20260926000001–03, 20260927000001–02 (preorder) + full DUMMY seed applied on 2026-09-27.
   20260927000003 (public site) applied on 2026-09-27. 20260928000001 (order_items.unit_cost) applied on 2026-09-27.
+  20261022000001 (web checkout) + 20261022000002 (website content) applied on 2026-10-23 (partly via MCP, the rest by Alto
+  in the SQL Editor because MCP calls with drop/delete/update hung; both are recorded in schema_migrations).
   New migrations: add a file in
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
@@ -139,6 +143,8 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
 4. Check the site in an incognito window; if Vercel login appears, disable Vercel Authentication (Deployment Protection).
 5. Before real orders: remove DUMMY data (supabase/remove_dummy.sql, ask first), enter real products (Tampil di website),
    replace DUMMY bank/QRIS/pickup in Lainnya → Pengaturan, test one photo upload, final website copy from Nana.
+   Website: real prices (then `price_pending = false`), real shipping fees (then `settings.shipping_is_sample = false`),
+   QRIS image, then `settings.web_orders_open = true`. Until the stage 5 settings screen exists these are set via SQL.
 6. Optional: delete the unused `SUPABASE_Secret_Key` / `SUPABASE_Publishkey` envs; Vercel Function Region → dub1;
    Supabase leaked password protection. Open question: does PBJT 10% apply to online sales?
 
@@ -224,6 +230,20 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   Mode Natal = takeover as in the prototype: /, /menu, /hampers, /tentang, /faq show the Natal page; nav Hampers (#paket) ·
   Cara pesan (#cara) · FAQ (#tanya) · Kontak; /kontak and /keranjang stay normal. Normal pages are built too.
   Rule: when docs and prototype differ, the prototype wins; ask when unsure.
+- 2026-10-23: **Stage 4 (Supabase for the website)**, Alto: "atur aja / gas" (Claude's recommendations):
+  1. POS stays Majoo. No transactional stock; kitchen stock later only as a manual count + min stock (stage 5).
+  2. Keep Supabase Auth (email+password); PIN/role changes come with the app in stage 5.
+  3. Extend existing tables instead of a new schema. Stage 4 = website data only; app tables come in stage 5.
+  4. Settings flags: `mode_natal` (takeover), `snow_mode` (hero/semua/mati), `web_orders_open` (checkout accepts orders;
+     false until real prices/fees/bank/QRIS), `shipping_is_sample`, `dp_round` (Rp 50.000), `min_lead_days` (2),
+     `pay_timeout_min` (60). Default DP is 40%: DP = 40% of total rounded UP to Rp 50.000, capped at the total.
+  5. Web orders: channel `web`, status `menunggu_dp`, `expires_at` = now + 60 min; unpaid ones are cancelled lazily by
+     `cancel_expired_web_orders()` on the next web order (scheduled job in stage 6). Proof → payment `pending`; only
+     `matched` payments count towards amount_paid. Payments recorded in the app are `matched` right away.
+  6. Quotas: weekly capacity (existing) + `products.daily_quota` (hampers) + `campaigns.quota` (boxes per campaign).
+  7. Flat shipping fee per area (`shipping_areas`, SAMPLE fees). Prices from the prototype are stored with
+     `price_pending = true`: regular products show "harga menyusul"; campaign packages show their (sample) price
+     and checkout says "Harga masih contoh, belum final".
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->
