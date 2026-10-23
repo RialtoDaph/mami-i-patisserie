@@ -138,6 +138,7 @@ Mami uses a phone and is not very technical: the UI must work for her without lo
   20260927000003 (public site) applied on 2026-09-27. 20260928000001 (order_items.unit_cost) applied on 2026-09-27.
   20261022000001 (web checkout) + 20261022000002 (website content) applied on 2026-10-23 (partly via MCP, the rest by Alto
   in the SQL Editor because MCP calls with drop/delete/update hung; both are recorded in schema_migrations).
+  20261024000001 (crew role) + 20261024000002 (team login) applied by Alto in the SQL Editor on 2026-10-24.
   New migrations: add a file in
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
