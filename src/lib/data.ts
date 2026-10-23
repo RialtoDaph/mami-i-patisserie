@@ -144,6 +144,8 @@ export interface CurrentUser {
   id: string;
   email: string | null;
   fullName: string;
+  /** Shown under the name, e.g. "Owner", "Barista". */
+  title: string;
   role: AppRole | null;
 }
 
@@ -155,14 +157,15 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   if (!claims?.sub) redirect("/login");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role")
+    .select("full_name, role, title, is_active")
     .eq("id", claims.sub)
     .maybeSingle();
   return {
     id: claims.sub,
     email: (claims.email as string | undefined) ?? null,
     fullName: profile?.full_name ?? "",
-    role: (profile?.role as AppRole | null) ?? null,
+    title: profile?.title ?? "",
+    role: profile?.is_active ? ((profile.role as AppRole | null) ?? null) : null,
   };
 });
 

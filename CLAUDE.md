@@ -12,12 +12,16 @@ Context for every Claude Code session working on this repository. Read this firs
 
 ## Team & roles
 
-| Person | Job | Role (`app_role`) | Notes |
+| Person | Job | Role (`app_role`) | Tabs (src/lib/appNav.ts) |
 |---|---|---|---|
-| Alto | Owner, lives in Germany, runs the system & finances | `owner` | |
-| Nana | Brand & marketing | `admin` | |
-| Mami | Production in Bandung | `produksi` | Uses a phone, not very technical. UI must work for her without long training. |
-| (future) | Outlet manager | `manager` | Role must exist now, not used yet. |
+| Alto | Owner, lives in Germany, runs the system & finances | `owner` | all + Alto-only: Akun tim, targets, approval limits, payroll paid |
+| Nana | Owner: brand & marketing | `admin` | all |
+| Mami | Owner: production, recipes, standards | `admin` | all (decided 2026-10-24: prototype wins over APP.md) |
+| Pastry chef | Production | `produksi` | beranda, order, produksi, tim, alat; may only move orders to Diproduksi/Siap |
+| Manager kafe | Cafe manager | `manager` | kafe, mingguan, target, tim, persetujuan, alat |
+| Barista, waiter, part-timer | Crew | `crew` | tim, alat (no order/customer/costing data) |
+
+Mami uses a phone and is not very technical: the UI must work for her without long training.
 
 ## Stack
 
@@ -95,9 +99,18 @@ Context for every Claude Code session working on this repository. Read this firs
   (+ `/export` CSV), params in `src/lib/shoppingParams.ts`. `order_items.unit_cost` = HPP snapshot set by `saveOrder`.
 - `src/lib/preorderData.ts` (loads all preorder data), `src/lib/preorderActions.ts`, `src/lib/upload.ts`
   (client-side photo compress + Storage upload), `src/lib/errors.ts`.
-- Nav: Beranda `/app` (dashboard for owner/admin, production for others) · Order `/app/order` · Produksi
-  `/app/produksi` · Costing `/app/costing` (+ `/app/bahan`, `/app/resep`, `/app/paket`) · Lainnya `/app/lainnya`
-  (`/app/pelanggan`, `/app/produk`, `/app/campaign`, `/app/pengaturan`). CSV: `/app/costing/export`, `/app/order/export`.
+- App nav (stage 5a): 6 groups in `src/lib/appNav.ts` (pure, tested): Beranda · Order (Order, Produksi) · Kafe (Laporan
+  kafe, Mingguan) · Uang (Laporan, Costing, Target) · Tim (Tim, Persetujuan) · Lainnya (Menu lain, Alat; Legal + Konten open
+  from the Lainnya list). Costing keeps `/app/bahan`, `/app/resep`, `/app/paket`; Lainnya keeps `/app/pelanggan`, `/app/produk`,
+  `/app/campaign`, `/app/pengaturan`, `/app/lainnya/akun` (Akun tim, owner only). Shell = `src/components/app/AppShell.tsx`
+  (top bar ≥ 760px, bottom nav on phones, pill tabs / underline tabs, "Semua menu", Ctrl K). Route guard per role in
+  `src/app/app/template.tsx` (path from the proxy's `x-pathname` header). Sections not built yet show `ComingSoon`.
+  CSV: `/app/costing/export`, `/app/order/export`.
+- Team login (stage 5a): `/login` shows "Siapa yang masuk?" + 4-digit PIN keypad only on devices Alto registered in
+  Akun tim (httpOnly cookie `mami_device`, sha256 in `devices`); elsewhere email + password. `src/lib/teamDevice.ts`
+  (server-only), `src/lib/teamAuth.ts` (actions): `pin_check` RPC (5 wrong → locked 15 min) → admin magic-link token →
+  `verifyOtp` on the server = normal Supabase session. PIN-only people get an `@mami-i.invalid` email (never mailed).
+  Needs `SUPABASE_SECRET_KEY` (`src/lib/supabase/admin.ts`). Sign-out is `scope: local` (shared tablets).
 - Public site (redesign 2026-10): route group `src/app/(site)` (`/`, `/menu`, `/hampers`, `/tentang`, `/faq`, `/kontak`,
   `/keranjang` = 3-step checkout; `/katalog` redirects to `/menu`). Page bodies in `src/components/site/pages`, header/
   drawers/footer in `src/components/site`. Data (stage 4): `src/lib/site/data.ts` (`loadSiteData`, server-only, React cache)
@@ -129,7 +142,8 @@ Context for every Claude Code session working on this repository. Read this firs
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
   Production domain: https://mami-i-patisserie.vercel.app (site URL falls back to VERCEL_PROJECT_PRODUCTION_URL).
-  Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key).
+  Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key), `SUPABASE_SECRET_KEY` (server only,
+  PIN login + Akun tim; not set yet, see reminders).
 - Users: altodaphino@gmail.com = owner (Alto). Nana/Mami accounts not created yet.
 
 ## Pending reminders for Alto (remind at the end of each phase until done)
@@ -139,7 +153,8 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
 1. Website WhatsApp number: set `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel (no number yet; WA buttons hidden until then).
    Also `NEXT_PUBLIC_INSTAGRAM` (and optionally `NEXT_PUBLIC_SITE_URL`).
 2. Supabase Auth: turn off "Allow new users to sign up"; set Site URL to https://mami-i-patisserie.vercel.app.
-3. Create Nana (admin) and Mami (produksi) accounts, then set roles via SQL.
+3. Set `SUPABASE_SECRET_KEY` in Vercel (secret key; the existing `SUPABASE_Secret_Key` env can be renamed), redeploy, then in
+   Lainnya → Akun tim: register the team devices, give everyone a PIN, add Nana & Mami (Owner) and the team.
 4. Check the site in an incognito window; if Vercel login appears, disable Vercel Authentication (Deployment Protection).
 5. Before real orders: remove DUMMY data (supabase/remove_dummy.sql, ask first), enter real products (Tampil di website),
    replace DUMMY bank/QRIS/pickup in Lainnya → Pengaturan, test one photo upload, final website copy from Nana.
@@ -244,6 +259,13 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   7. Flat shipping fee per area (`shipping_areas`, SAMPLE fees). Prices from the prototype are stored with
      `price_pending = true`: regular products show "harga menyusul"; campaign packages show their (sample) price
      and checkout says "Harga masih contoh, belum final".
+- 2026-10-24: **Stage 5 (internal app)** plan approved: sub-stages 5a login/roles/nav → 5b Beranda per person, Order,
+  Produksi (+ manual stock count, min stock, waste) → 5c Persetujuan + Target → 5d Tim (shift, absen, izin) → 5e gaji &
+  slip → 5f Kafe (Majoo) → 5g Laporan → 5h Alat, Konten, Legal; review at 360/768/1280 after each. Alto's answers:
+  1. PIN login only on devices registered once by Alto (email + password); 5 wrong PINs lock 15 minutes.
+  2. Roles: keep the DB enum, add `crew`; Nana and Mami are `admin` ("Owner"), pastry chef `produksi` (prototype wins).
+  3. Majoo export: no sample file yet, so 5f starts with manual entry + attached file; parsing comes when a file exists.
+  4. Order of sub-stages left to Claude; migrations go live after local tests (SQL Editor file when MCP can't run them).
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->

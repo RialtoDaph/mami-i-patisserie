@@ -18,22 +18,24 @@ function refresh() {
 
 // ---- Auth -------------------------------------------------------------------
 
-export async function signIn(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+/** Returns the typed email so the form can keep it after React resets the fields on a failed try. */
+export async function signIn(_prev: ActionResult & { email?: string }, formData: FormData): Promise<ActionResult & { email?: string }> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "");
-  if (!email || !password) return { error: "Email dan password wajib diisi." };
+  if (!email || !password) return { error: "Email dan password wajib diisi.", email };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "Email atau password salah." };
+  if (error) return { error: "Email atau password salah.", email };
   // Only allow internal redirects.
   redirect(next.startsWith("/app") ? next : "/app");
 }
 
+/** Ends the session on this device only, so a shared tablet goes back to the "Siapa yang masuk?" list. */
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/login");
 }
 

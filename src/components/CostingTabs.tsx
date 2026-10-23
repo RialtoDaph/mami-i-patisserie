@@ -10,7 +10,7 @@ const TABS = [
 /** Sub-navigation inside the Costing tab. */
 export function CostingTabs({ active }: { active: string }) {
   return (
-    <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
+    <div className="-mx-3.5 mb-4 flex gap-2 overflow-x-auto px-3.5 pb-1">
       {TABS.map((t) => (
         <Link key={t.href} href={t.href} className={active === t.href ? "chip-on" : "chip-off"}>
           {t.label}

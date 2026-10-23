@@ -40,9 +40,10 @@
   --shadow-polaroid: 0 14px 30px rgb(62 39 35 / 0.18);
   --shadow-sign: 0 16px 28px rgb(42 26 23 / 0.35);
 
-  /* Website layout switches: < 760px = phone header (rod + drawer), ≥ 1000px = checkout two columns. */
+  /* Layout switches: < 760px = phone (web: rod header + drawer; app: bottom nav), ≥ 1000px = checkout two columns. */
   --breakpoint-nav: 47.5rem;
   --breakpoint-wide: 62.5rem;
+  --breakpoint-xwide: 87.5rem; /* app top bar shows button labels (prototype: 1400px) */
 
   --ease-pop: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.3, 1.4, 0.5, 1);
@@ -73,6 +74,13 @@
   @keyframes sign-swing {
     0%, 100% { rotate: -1.2deg; }
     50% { rotate: 1.2deg; }
+  }
+  /* Wrong PIN (app login). */
+  --animate-pin-shake: pin-shake 0.35s ease both;
+  @keyframes pin-shake {
+    0%, 100% { translate: 0; }
+    20%, 60% { translate: -8px; }
+    40%, 80% { translate: 8px; }
   }
 }
 
@@ -112,6 +120,14 @@
 /* Horizontal chip/tab rows that scroll without a visible scrollbar. */
 @utility scroll-x-hidden {
   overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Horizontal chip/tab rows: scroll without a visible scrollbar (APP.md). */
+@utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;

@@ -1,19 +1,17 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getCurrentUser } from "@/lib/data";
-import { can } from "@/lib/permissions";
 import { loadPreorderData } from "@/lib/preorderData";
 import { filterOrders, formatDateId, FULFILL_LABEL, orderCountByCustomer, ORDER_STATUSES, paymentStatus, STATUS_LABEL } from "@/lib/preorder";
 import { formatRupiah } from "@/lib/format";
 import { orderFilterQuery, parseOrderFilter } from "@/lib/orderParams";
-import { EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
 import { PaymentBadge, RepeatBadge, StatusBadge } from "@/components/preorder";
 
 export const metadata: Metadata = { title: "Order" };
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const filter = parseOrderFilter(await searchParams);
-  const [user, data] = await Promise.all([getCurrentUser(), loadPreorderData()]);
+  const data = await loadPreorderData();
   const rows = filterOrders(data.orders, data.customers, filter);
   const customers = new Map(data.customers.map((c) => [c.id, c]));
   const counts = orderCountByCustomer(data.orders);
@@ -22,11 +20,6 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <PageHeader
-        title="Order"
-        action={can(user.role, "order.edit") ? <Link href="/app/order/baru" className="btn-primary px-4">+ Order</Link> : null}
-      />
-
       <form className="mb-3 flex gap-2" action="/app/order">
         <input type="search" name="q" defaultValue={filter.q ?? ""} placeholder="Cari nama, no. WA, MIP-…" className="input" />
         {filter.campaignId && <input type="hidden" name="kampanye" value={filter.campaignId} />}
