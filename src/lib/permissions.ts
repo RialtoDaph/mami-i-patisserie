@@ -19,7 +19,9 @@ export type Action =
   | "settings.edit"
   | "dashboard.view"
   | "profit.view"
-  | "team.manage";
+  | "team.manage"
+  | "waste.add"
+  | "waste.deleteAny";
 
 const RULES: Record<Action, AppRole[]> = {
   "ingredient.edit": ["owner", "admin", "produksi"],
@@ -37,6 +39,8 @@ const RULES: Record<Action, AppRole[]> = {
   "dashboard.view": ["owner", "admin"],
   "profit.view": ["owner", "admin"],
   "team.manage": ["owner"],
+  "waste.add": ["owner", "admin", "produksi"],
+  "waste.deleteAny": ["owner", "admin"],
 };
 
 export function can(role: AppRole | null, action: Action): boolean {

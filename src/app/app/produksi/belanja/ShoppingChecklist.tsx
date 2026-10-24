@@ -75,7 +75,11 @@ export function ShoppingChecklist({
                         <span className={`min-w-0 flex-1 ${done ? "text-muted line-through" : ""}`}>
                           <span className="block font-semibold">{r.name}</span>
                           <span className="block text-sm">
-                            Beli <b>{buyLabel(r)}</b> <span className="text-muted">· butuh {needLabel(r.needQty, r.baseUnit)}</span>
+                            Beli <b>{buyLabel(r)}</b>{" "}
+                            <span className="text-muted">
+                              · butuh {needLabel(r.needQty, r.baseUnit)}
+                              {r.stockQty != null && `, stok ${needLabel(r.stockQty, r.baseUnit)}`}
+                            </span>
                           </span>
                         </span>
                         <span className="shrink-0 text-right text-sm tabular-nums">{formatRupiah(r.buyCost)}</span>
@@ -101,7 +105,7 @@ export function ShoppingChecklist({
           </div>
         )}
         <p className="mt-1 text-xs text-muted">
-          Harga dari data bahan (per kemasan beli). Nilai bahan yang benar-benar terpakai ± {formatRupiah(totalUse)}; sisanya jadi stok.
+          Harga dari data bahan (per kemasan beli). Nilai bahan yang terpakai untuk order ini ± {formatRupiah(totalUse)}.
         </p>
       </section>
 

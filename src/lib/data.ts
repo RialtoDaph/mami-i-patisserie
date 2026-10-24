@@ -15,6 +15,9 @@ interface IngredientRow {
   name: string;
   category: IngredientCategory;
   supplier: string | null;
+  stock_qty: number | string | null;
+  stock_counted_at: string | null;
+  min_stock: number | string | null;
   purchase_unit: PurchaseUnit;
   purchase_qty: number | string;
   purchase_price: number | string;
@@ -73,6 +76,11 @@ interface BundleRow {
 
 export interface IngredientFull extends Ingredient {
   supplier: string | null;
+  /** Last manual count in the base unit; null = never counted. */
+  stockQty: number | null;
+  stockCountedAt: string | null;
+  /** Warn below this (base unit); null = no minimum. */
+  minStock: number | null;
   notes: string | null;
   isDummy: boolean;
   updatedAt: string;
@@ -105,6 +113,7 @@ function mapIngredient(r: IngredientRow): IngredientFull {
     id: r.id, name: r.name, category: r.category, supplier: r.supplier,
     purchaseUnit: r.purchase_unit, purchaseQty: num(r.purchase_qty),
     purchasePrice: num(r.purchase_price), baseUnit: r.base_unit,
+    stockQty: numOrNull(r.stock_qty), stockCountedAt: r.stock_counted_at, minStock: numOrNull(r.min_stock),
     notes: r.notes, isDummy: r.is_dummy, updatedAt: r.updated_at,
   };
 }

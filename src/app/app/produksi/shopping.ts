@@ -11,8 +11,10 @@ export function buildShoppingList(pre: PreorderData, costing: FullCostingData, p
   const needs = ingredientNeeds(productQty, pre.products, costing.ingredients, costing.recipes, costing.bundles, {
     roundBatches: p.roundBatches,
   });
-  const rows = shoppingRows(needs, costing.ingredients);
+  const all = shoppingRows(needs, costing.ingredients, { subtractStock: p.useStock });
+  const rows = all.filter((r) => r.packs > 0);
   return {
+    covered: all.filter((r) => r.packs === 0),
     orderCount: orders.length,
     products: [...productQty]
       .map(([id, qty]) => ({ id, qty, name: pre.products.find((x) => x.id === id)?.name ?? "?" }))

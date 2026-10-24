@@ -15,16 +15,17 @@ export async function GET(request: Request) {
   const list = buildShoppingList(pre, costing, p);
 
   const csv = toCsv([
-    ["Kategori", "Supplier", "Bahan", "Kebutuhan", "Satuan", "Beli", "Estimasi belanja (Rp)", "Nilai terpakai (Rp)"],
+    ["Kategori", "Supplier", "Bahan", "Kebutuhan", "Stok", "Satuan", "Beli", "Estimasi belanja (Rp)", "Nilai terpakai (Rp)"],
     ...list.groups.flatMap((g) =>
       g.suppliers.flatMap((s) =>
         s.rows.map((r) => [
-          CATEGORY_TITLE[g.category], s.supplier ?? "", r.name, r.needQty.toFixed(r.baseUnit === "pcs" ? 1 : 0), r.baseUnit,
+          CATEGORY_TITLE[g.category], s.supplier ?? "", r.name, r.needQty.toFixed(r.baseUnit === "pcs" ? 1 : 0),
+          r.stockQty == null ? "" : r.stockQty.toFixed(r.baseUnit === "pcs" ? 1 : 0), r.baseUnit,
           buyLabel(r), Math.round(r.buyCost), Math.round(r.useCost),
         ]),
       ),
     ),
-    ["", "", "Total", "", "", "", Math.round(list.totalBuy), Math.round(list.totalUse)],
+    ["", "", "Total", "", "", "", "", Math.round(list.totalBuy), Math.round(list.totalUse)],
   ]);
 
   return new Response("﻿" + csv, {

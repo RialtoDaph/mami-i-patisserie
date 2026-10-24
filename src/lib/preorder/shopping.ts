@@ -73,7 +73,11 @@ export interface ShoppingRow {
   purchaseUnit: PurchaseUnit;
   /** Base units in one purchase (e.g. 1000 g per kg, 227 g per pack). */
   packSize: number;
-  /** Whole purchase units to buy. */
+  /** Last stock count (base unit) when subtracted; null = not counted or not subtracted. */
+  stockQty: number | null;
+  /** Still to buy after stock (base unit). */
+  buyQty: number;
+  /** Whole purchase units to buy (0 when the stock covers the need). */
   packs: number;
   /** Cost of the packs to buy. */
   buyCost: number;
@@ -81,16 +85,26 @@ export interface ShoppingRow {
   useCost: number;
 }
 
-export function shoppingRows(needs: Map<string, number>, ingredients: (Ingredient & { supplier?: string | null })[]): ShoppingRow[] {
+/**
+ * One row per needed ingredient. With `subtractStock`, the last manual count is taken off the need first
+ * (rows the stock fully covers get packs = 0).
+ */
+export function shoppingRows(
+  needs: Map<string, number>,
+  ingredients: (Ingredient & { supplier?: string | null; stockQty?: number | null })[],
+  options: { subtractStock?: boolean } = {},
+): ShoppingRow[] {
   const rows: ShoppingRow[] = [];
   for (const ing of ingredients) {
     const needQty = needs.get(ing.id) ?? 0;
     if (needQty <= 0) continue;
     const packSize = purchaseBaseQuantity(ing.purchaseUnit, ing.purchaseQty);
-    const packs = Math.ceil(needQty / packSize - 1e-9);
+    const stockQty = options.subtractStock && ing.stockQty != null ? ing.stockQty : null;
+    const buyQty = Math.max(0, needQty - (stockQty ?? 0));
+    const packs = buyQty > 0 ? Math.ceil(buyQty / packSize - 1e-9) : 0;
     rows.push({
       ingredientId: ing.id, name: ing.name, category: ing.category, supplier: ing.supplier ?? null,
-      needQty, baseUnit: ing.baseUnit, purchaseUnit: ing.purchaseUnit, packSize, packs,
+      needQty, baseUnit: ing.baseUnit, purchaseUnit: ing.purchaseUnit, packSize, stockQty, buyQty, packs,
       buyCost: packs * ing.purchasePrice,
       useCost: needQty * pricePerBaseUnit(ing),
     });
@@ -157,8 +171,10 @@ export function shoppingMessage(groups: ShoppingGroup[], title: string, bought: 
   for (const g of groups) {
     lines.push("", `*${CATEGORY_TITLE[g.category]}*`);
     for (const s of g.suppliers) {
+      const toBuy = s.rows.filter((r) => r.packs > 0);
+      if (!toBuy.length) continue;
       lines.push(`_${s.supplier ?? "Supplier belum diisi"}_`);
-      for (const r of s.rows) {
+      for (const r of toBuy) {
         lines.push(`${bought.has(r.ingredientId) ? "✅" : "▫️"} ${r.name}: ${buyLabel(r)} (butuh ${needLabel(r.needQty, r.baseUnit)})`);
       }
     }

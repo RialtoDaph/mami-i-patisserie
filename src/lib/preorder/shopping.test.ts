@@ -59,6 +59,17 @@ describe("shoppingRows", () => {
     expect(rows.every((r) => r.needQty > 0)).toBe(true);
   });
 
+  it("takes the last stock count off the need when asked", () => {
+    const counted = ingredients.map((i) => ({ ...i, stockQty: i.id === "croissant" ? 3 : i.id === "boxCroissant" ? 40 : null }));
+    const rows = shoppingRows(needsFor([["croissant", 5]]), counted, { subtractStock: true });
+    const by = Object.fromEntries(rows.map((r) => [r.ingredientId, r]));
+    expect(by.croissant).toMatchObject({ stockQty: 3, buyQty: 2, packs: 2, buyCost: 24000 });
+    expect(by.boxCroissant).toMatchObject({ stockQty: 40, buyQty: 0, packs: 0, buyCost: 0 });
+    expect(by.susu.stockQty).toBeNull();
+    // Without the option the count is ignored.
+    expect(shoppingRows(needsFor([["croissant", 5]]), counted).find((r) => r.ingredientId === "croissant")?.packs).toBe(5);
+  });
+
   it("groups by category then supplier, unknown supplier last", () => {
     const withSupplier = ingredients.map((i) => ({ ...i, supplier: i.id === "croissant" ? "Bakery X" : i.id === "paste" ? "Toko A" : null }));
     const groups = groupShopping(shoppingRows(needsFor([["croissant", 5]]), withSupplier));

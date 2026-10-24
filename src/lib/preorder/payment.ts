@@ -5,7 +5,7 @@ export type PaymentStatus = "belum_bayar" | "dp_kurang" | "dp_ok" | "lunas" | "l
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   belum_bayar: "Belum bayar",
   dp_kurang: "DP kurang",
-  dp_ok: "DP diterima",
+  dp_ok: "DP cukup",
   lunas: "Lunas",
   lebih_bayar: "Lebih bayar",
 };

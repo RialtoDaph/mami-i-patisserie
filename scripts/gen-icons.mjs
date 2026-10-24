@@ -5,15 +5,17 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 const ICONS = [
   "ac_unit", "account_balance", "add", "approval", "apps", "arrow_back", "arrow_downward", "arrow_forward",
-  "attach_file", "backspace", "badge", "bakery_dining", "build", "calculate", "calendar_month", "call", "campaign",
-  "chat", "check", "check_circle", "chevron_left", "chevron_right", "close", "dashboard", "delete", "devices",
-  "done_all", "door_open", "eco", "edit", "error", "event_available", "fact_check", "fiber_new", "flag",
-  "forward_to_inbox", "gavel", "group", "handyman", "help", "home", "info", "key", "keyboard_arrow_down", "language",
+  "arrow_right_alt", "attach_file", "backspace", "badge", "bakery_dining", "build", "calculate", "calendar_month",
+  "call", "campaign", "chat", "chat_bubble", "check", "check_circle", "chevron_left", "chevron_right", "close",
+  "dashboard", "delete", "delete_sweep", "devices", "done_all", "door_open", "eco", "edit", "edit_note", "error",
+  "event_available", "fact_check", "fiber_new", "flag", "forward_to_inbox", "gavel",
+  "group", "handyman", "help", "home", "info", "inventory_2", "key", "keyboard_arrow_down", "keyboard_arrow_up", "language",
   "local_shipping", "location_on", "lock", "login", "logout", "mail", "manage_accounts", "map", "menu", "menu_book",
   "monitoring", "moped", "more_horiz", "notifications", "password", "payments", "person_add", "photo_camera",
   "picture_as_pdf", "qr_code_2", "radio_button_unchecked", "receipt_long", "redeem", "remove", "report", "schedule",
-  "search", "send", "settings", "shopping_bag", "skillet", "snooze", "sticky_note_2", "storefront", "summarize",
-  "table_view", "target", "task_alt", "touch_app", "trending_up", "upload", "verified_user", "warning",
+  "search", "send", "settings", "shopping_bag", "shopping_basket", "skillet", "snooze", "sticky_note_2", "storefront",
+  "summarize", "table_view", "target", "task_alt", "timer", "touch_app", "trending_up", "upload", "verified_user",
+  "warning",
 ];
 
 const dir = new URL("../node_modules/@material-symbols/svg-400/rounded/", import.meta.url);

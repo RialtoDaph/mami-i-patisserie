@@ -111,6 +111,14 @@ Mami uses a phone and is not very technical: the UI must work for her without lo
   (server-only), `src/lib/teamAuth.ts` (actions): `pin_check` RPC (5 wrong → locked 15 min) → admin magic-link token →
   `verifyOtp` on the server = normal Supabase session. PIN-only people get an `@mami-i.invalid` email (never mailed).
   Needs `SUPABASE_SECRET_KEY` (`src/lib/supabase/admin.ts`). Sign-out is `scope: local` (shared tablets).
+- App 5b: Beranda `src/app/app/page.tsx` (owners: KPI, focus list, 30-day chart, "Perlu perhatian"; pastry chef:
+  "Hari ini bikin apa" with "Selesai dibuat" ticks, hand-overs with "Tandai Siap", tomorrow). Pure helpers + tests in
+  `src/lib/preorder/home.ts` (month revenue by fulfil date, late DP, campaign pace) and `kitchen.ts` (stock state,
+  `countUnit` = kitchen counts in kg / liter / pcs, waste reasons, `canSetStatus` mirror of the SQL guard).
+  Order = `OrderList.tsx` (search + chips) + detail; on ≥ 1000px the detail shows the list on the left. Produksi tabs:
+  Jadwal (campaign table + day cards with recipe/ingredient needs) · Belanja (subtracts kitchen stock by default,
+  `stok=0` off) · Stok (`/app/produksi/stok`) · Waste (`/app/produksi/waste`). Actions in `src/lib/kitchenActions.ts`.
+  App UI blocks: `src/components/app/ui.tsx` (Panel, SectionLabel, ListRow, LocalTabs, ChipLink, Kpi), `LineChart.tsx`.
 - Public site (redesign 2026-10): route group `src/app/(site)` (`/`, `/menu`, `/hampers`, `/tentang`, `/faq`, `/kontak`,
   `/keranjang` = 3-step checkout; `/katalog` redirects to `/menu`). Page bodies in `src/components/site/pages`, header/
   drawers/footer in `src/components/site`. Data (stage 4): `src/lib/site/data.ts` (`loadSiteData`, server-only, React cache)
@@ -267,6 +275,11 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   2. Roles: keep the DB enum, add `crew`; Nana and Mami are `admin` ("Owner"), pastry chef `produksi` (prototype wins).
   3. Majoo export: no sample file yet, so 5f starts with manual entry + attached file; parsing comes when a file exists.
   4. Order of sub-stages left to Claude; migrations go live after local tests (SQL Editor file when MCP can't run them).
+- 2026-10-24: **5b** (Claude's calls, per the approved plan): stock = manual count per ingredient in kg / liter / pcs
+  plus a minimum set by the kitchen (owner/admin/produksi); no stock ledger (Majoo). Waste log for products or
+  ingredients with a reason; value = HPP or ingredient price. "Selesai dibuat" = `production_marks` per day/product.
+  Beranda revenue = pre-order only until Majoo reports (5f); target bars come with 5c. "DP telat" = DP still short
+  and ordered ≥ 2 days ago or due within 3 days. Payment label `dp_ok` is "DP cukup" (prototype).
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->

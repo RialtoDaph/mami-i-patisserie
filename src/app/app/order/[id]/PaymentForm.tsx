@@ -6,6 +6,7 @@ import { uploadPhoto } from "@/lib/upload";
 import { formatNumber, formatRupiah, parseNumberInput } from "@/lib/format";
 import { PAYMENT_METHOD_LABEL, type PaymentMethod } from "@/lib/preorder";
 import { ErrorBox } from "@/components/ui";
+import { Icon } from "@/components/brand";
 
 const METHODS: PaymentMethod[] = ["transfer", "qris", "tunai"];
 
@@ -21,7 +22,24 @@ export function PaymentForm({ orderId, suggestions }: { orderId: string; suggest
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!open) {
-    return <button type="button" onClick={() => setOpen(true)} className="btn-primary w-full">+ Catat pembayaran</button>;
+    // Prototype: one button per suggestion ("Catat DP Rp 150.000", "Lunas Rp 283.000") that opens the form prefilled.
+    return (
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
+        {(suggestions.length ? suggestions : [{ label: "Catat pembayaran", amount: 0 }]).map((s) => (
+          <button
+            key={s.label}
+            type="button"
+            onClick={() => {
+              setAmount(s.amount ? formatNumber(s.amount) : "");
+              setOpen(true);
+            }}
+            className="min-h-12 rounded-md border-[1.5px] border-brand-espresso/22 bg-white px-3 text-[15px] font-bold"
+          >
+            {s.amount ? `${s.label === "DP" ? "Catat DP" : s.label} ${formatRupiah(s.amount)}` : s.label}
+          </button>
+        ))}
+      </div>
+    );
   }
 
   const submit = () => {
@@ -43,7 +61,7 @@ export function PaymentForm({ orderId, suggestions }: { orderId: string; suggest
   };
 
   return (
-    <div className="card flex flex-col gap-3 border-cocoa/30">
+    <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-brand-espresso/30 bg-white p-4">
       <h3 className="font-bold text-cocoa">Catat pembayaran</h3>
       <label>
         <span className="field-label">Jumlah (Rp)</span>
@@ -67,7 +85,8 @@ export function PaymentForm({ orderId, suggestions }: { orderId: string; suggest
         <span className="field-label">Bukti bayar (foto)</span>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         <button type="button" onClick={() => fileRef.current?.click()} className="btn-secondary w-full">
-          📷 {file ? `Ganti foto (${file.name.slice(0, 20)})` : "Pilih / foto bukti bayar"}
+          <Icon name="photo_camera" size={20} />
+          {file ? `Ganti foto (${file.name.slice(0, 20)})` : "Pilih / foto bukti bayar"}
         </button>
       </div>
       <label>

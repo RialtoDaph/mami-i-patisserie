@@ -1,10 +1,16 @@
-import Link from "next/link";
+import { LocalTabs } from "@/components/app/ui";
 
-export function ProductionTabs({ active }: { active: "jadwal" | "belanja" }) {
+export type ProductionTab = "jadwal" | "belanja" | "stok" | "waste";
+
+export function ProductionTabs({ active }: { active: ProductionTab }) {
   return (
-    <nav className="mb-4 grid grid-cols-2 gap-2">
-      <Link href="/app/produksi" className={active === "jadwal" ? "chip-on" : "chip-off"}>Jadwal</Link>
-      <Link href="/app/produksi/belanja" className={active === "belanja" ? "chip-on" : "chip-off"}>Belanja</Link>
-    </nav>
+    <LocalTabs
+      items={[
+        { href: "/app/produksi", label: "Jadwal", icon: "calendar_month", active: active === "jadwal" },
+        { href: "/app/produksi/belanja", label: "Belanja", icon: "shopping_basket", active: active === "belanja" },
+        { href: "/app/produksi/stok", label: "Stok", icon: "inventory_2", active: active === "stok" },
+        { href: "/app/produksi/waste", label: "Waste", icon: "delete_sweep", active: active === "waste" },
+      ]}
+    />
   );
 }

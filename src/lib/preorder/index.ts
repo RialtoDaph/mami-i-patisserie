@@ -12,3 +12,5 @@ export * from "./dashboard";
 export * from "./filters";
 export * from "./shopping";
 export * from "./profit";
+export * from "./kitchen";
+export * from "./home";
