@@ -5,7 +5,7 @@ export type PaymentStatus = "belum_bayar" | "dp_kurang" | "dp_ok" | "lunas" | "l
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   belum_bayar: "Belum bayar",
   dp_kurang: "DP kurang",
-  dp_ok: "DP diterima",
+  dp_ok: "DP cukup",
   lunas: "Lunas",
   lebih_bayar: "Lebih bayar",
 };
@@ -24,11 +24,11 @@ export function dpPercentFor(campaign: Pick<Campaign, "dpPercent"> | null, setti
   return campaign?.dpPercent ?? settings.defaultDpPercent;
 }
 
-/** Suggested DP = total × percent, rounded up to Rp 1.000, never above the total. */
-export function suggestedDp(total: number, percent: number): number {
+/** Suggested DP = total × percent, rounded up to `round` (settings.dp_round, e.g. Rp 50.000), never above the total. */
+export function suggestedDp(total: number, percent: number, round = 1000): number {
   if (total <= 0 || percent <= 0) return 0;
   const raw = Math.round(((total * percent) / 100) * 1e6) / 1e6;
-  return Math.min(total, Math.ceil(raw / 1000) * 1000);
+  return Math.min(total, Math.ceil(raw / round) * round);
 }
 
 export function remainingOf(total: number, paid: number): number {

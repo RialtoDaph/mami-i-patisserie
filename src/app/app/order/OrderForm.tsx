@@ -103,7 +103,7 @@ export function OrderForm({ products, campaigns, customers, orders, settings, to
   const discountN = money(discount);
   const total = totalOf(subtotal, shippingFee, discountN);
   const dpPercent = dpPercentFor(campaign, settings);
-  const dpSuggestion = suggestedDp(Math.max(total, 0), dpPercent);
+  const dpSuggestion = suggestedDp(Math.max(total, 0), dpPercent, settings.dpRound ?? 1000);
   const dp = dpTouched ? money(dpText) : dpSuggestion;
   const earliest = earliestFulfillDate(items.length ? items.map((i) => i.productId) : available.map((p) => p.id), products, today);
 

@@ -15,6 +15,9 @@ interface IngredientRow {
   name: string;
   category: IngredientCategory;
   supplier: string | null;
+  stock_qty: number | string | null;
+  stock_counted_at: string | null;
+  min_stock: number | string | null;
   purchase_unit: PurchaseUnit;
   purchase_qty: number | string;
   purchase_price: number | string;
@@ -73,6 +76,11 @@ interface BundleRow {
 
 export interface IngredientFull extends Ingredient {
   supplier: string | null;
+  /** Last manual count in the base unit; null = never counted. */
+  stockQty: number | null;
+  stockCountedAt: string | null;
+  /** Warn below this (base unit); null = no minimum. */
+  minStock: number | null;
   notes: string | null;
   isDummy: boolean;
   updatedAt: string;
@@ -105,6 +113,7 @@ function mapIngredient(r: IngredientRow): IngredientFull {
     id: r.id, name: r.name, category: r.category, supplier: r.supplier,
     purchaseUnit: r.purchase_unit, purchaseQty: num(r.purchase_qty),
     purchasePrice: num(r.purchase_price), baseUnit: r.base_unit,
+    stockQty: numOrNull(r.stock_qty), stockCountedAt: r.stock_counted_at, minStock: numOrNull(r.min_stock),
     notes: r.notes, isDummy: r.is_dummy, updatedAt: r.updated_at,
   };
 }
@@ -144,7 +153,11 @@ export interface CurrentUser {
   id: string;
   email: string | null;
   fullName: string;
+  /** Shown under the name, e.g. "Owner", "Barista". */
+  title: string;
   role: AppRole | null;
+  /** May decide approvals Alto has not answered in time (Mami). */
+  approvalBackup: boolean;
 }
 
 /** Logged-in user with role. Redirects to /login when not logged in. */
@@ -155,14 +168,16 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   if (!claims?.sub) redirect("/login");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role")
+    .select("full_name, role, title, is_active, approval_backup")
     .eq("id", claims.sub)
     .maybeSingle();
   return {
     id: claims.sub,
     email: (claims.email as string | undefined) ?? null,
     fullName: profile?.full_name ?? "",
-    role: (profile?.role as AppRole | null) ?? null,
+    title: profile?.title ?? "",
+    approvalBackup: profile?.approval_backup ?? false,
+    role: profile?.is_active ? ((profile.role as AppRole | null) ?? null) : null,
   };
 });
 

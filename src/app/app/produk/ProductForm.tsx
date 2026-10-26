@@ -33,7 +33,7 @@ export function ProductForm({
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [ref, setRef] = useState(initial ? (initial.recipeId ? `r:${initial.recipeId}` : `b:${initial.bundleId}`) : "");
+  const [ref, setRef] = useState(initial?.recipeId ? `r:${initial.recipeId}` : initial?.bundleId ? `b:${initial.bundleId}` : "");
   const [units, setUnits] = useState(formatNumber(initial?.unitsPerProduct ?? 1, 3));
   const [price, setPrice] = useState(initial ? formatNumber(initial.price) : "");
   const [capacity, setCapacity] = useState(initial?.weeklyCapacity != null ? String(initial.weeklyCapacity) : "");

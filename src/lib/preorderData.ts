@@ -3,7 +3,7 @@ import { cache } from "react";
 import { createClient } from "./supabase/server";
 import type { WebCategory } from "@/content/site";
 import type {
-  Campaign, Customer, FulfillMethod, Order, OrderStatus, Payment, PaymentMethod, Product, Settings,
+  Campaign, Customer, FulfillMethod, Order, OrderStatus, Payment, PaymentMethod, Product, Settings, WasteReason,
 } from "./preorder";
 
 type Num = number | string;
@@ -19,6 +19,7 @@ interface ProductRow {
 interface CampaignRow {
   id: string; name: string; preorder_open: string; preorder_close: string; fulfill_start: string | null;
   fulfill_end: string | null; dp_percent: Num | null; is_active: boolean; notes: string | null; is_dummy: boolean;
+  slug: string | null; quota: number | null; target_revenue: Num | null;
   campaign_products: { product_id: string; price_override: Num | null }[];
 }
 interface CustomerRow { id: string; name: string; whatsapp: string; address: string | null; notes: string | null; is_dummy: boolean; created_at: string }
@@ -27,16 +28,23 @@ interface OrderRow {
   fulfill_method: FulfillMethod; delivery_address: string | null; status: OrderStatus; subtotal: Num;
   shipping_fee: Num; discount: Num; total: Num; dp_amount: Num; amount_paid: Num; notes: string | null;
   created_at: string; is_dummy: boolean;
-  order_items: { product_id: string; qty: number; unit_price: Num; unit_cost: Num | null; sort_order: number }[];
+  channel: "admin" | "web"; delivery_area: string | null; pickup_slot: string | null; pay_mode: "dp" | "lunas" | null;
+  order_items: { product_id: string; qty: number; unit_price: Num; unit_cost: Num | null; card_note: string | null; sort_order: number }[];
 }
-interface PaymentRow { id: string; amount: Num; method: PaymentMethod; proof_path: string | null; paid_at: string; note: string | null }
+interface PaymentRow {
+  id: string; amount: Num; method: PaymentMethod; proof_path: string | null; paid_at: string; note: string | null;
+  status: "pending" | "matched" | "rejected";
+}
 interface SettingsRow {
   business_name: string; business_whatsapp: string | null; bank_name: string | null; bank_account_no: string | null;
   bank_account_name: string | null; qris_note: string | null; pickup_address: string | null; default_dp_percent: Num;
+  dp_round?: Num;
 }
 
 export interface ProductFull extends Product { isDummy: boolean; webCategory: WebCategory }
-export interface CampaignFull extends Campaign { notes: string | null; isDummy: boolean }
+export interface CampaignFull extends Campaign {
+  notes: string | null; isDummy: boolean; slug: string | null; quota: number | null; targetRevenue: number | null;
+}
 export interface CustomerFull extends Customer { isDummy: boolean; createdAt: string }
 export interface OrderFull extends Order { isDummy: boolean }
 
@@ -50,7 +58,8 @@ export const mapProduct = (r: ProductRow): ProductFull => ({
 const mapCampaign = (r: CampaignRow): CampaignFull => ({
   id: r.id, name: r.name, preorderOpen: r.preorder_open, preorderClose: r.preorder_close,
   fulfillStart: r.fulfill_start, fulfillEnd: r.fulfill_end, dpPercent: numOrNull(r.dp_percent),
-  isActive: r.is_active, notes: r.notes, isDummy: r.is_dummy,
+  isActive: r.is_active, notes: r.notes, isDummy: r.is_dummy, slug: r.slug, quota: r.quota,
+  targetRevenue: numOrNull(r.target_revenue),
   products: r.campaign_products.map((cp) => ({ productId: cp.product_id, priceOverride: numOrNull(cp.price_override) })),
 });
 
@@ -63,15 +72,24 @@ const mapOrder = (r: OrderRow): OrderFull => ({
   fulfillMethod: r.fulfill_method, deliveryAddress: r.delivery_address, status: r.status, subtotal: num(r.subtotal),
   shippingFee: num(r.shipping_fee), discount: num(r.discount), total: num(r.total), dpAmount: num(r.dp_amount),
   amountPaid: num(r.amount_paid), notes: r.notes, createdAt: r.created_at, isDummy: r.is_dummy,
+  channel: r.channel, deliveryArea: r.delivery_area, pickupSlot: r.pickup_slot, payMode: r.pay_mode,
   items: [...r.order_items].sort((a, b) => a.sort_order - b.sort_order)
-    .map((i) => ({ productId: i.product_id, qty: i.qty, unitPrice: num(i.unit_price), unitCost: numOrNull(i.unit_cost) })),
+    .map((i) => ({ productId: i.product_id, qty: i.qty, unitPrice: num(i.unit_price), unitCost: numOrNull(i.unit_cost), cardNote: i.card_note })),
 });
 
 const mapSettings = (r: SettingsRow): Settings => ({
   businessName: r.business_name, businessWhatsapp: r.business_whatsapp, bankName: r.bank_name,
   bankAccountNo: r.bank_account_no, bankAccountName: r.bank_account_name, qrisNote: r.qris_note,
-  pickupAddress: r.pickup_address, defaultDpPercent: num(r.default_dp_percent),
+  pickupAddress: r.pickup_address, defaultDpPercent: num(r.default_dp_percent), dpRound: r.dp_round == null ? 50000 : num(r.dp_round),
 });
+
+/** A website payment proof waiting for "Bukti cocok". */
+export interface PendingProof {
+  paymentId: string;
+  orderId: string;
+  amount: number;
+  paidAt: string;
+}
 
 export interface PreorderData {
   products: ProductFull[];
@@ -79,19 +97,21 @@ export interface PreorderData {
   customers: CustomerFull[];
   orders: OrderFull[];
   settings: Settings;
+  pendingProofs: PendingProof[];
 }
 
 /** Everything the preorder pages need. Small enough to load whole for now. */
 export const loadPreorderData = cache(async (): Promise<PreorderData> => {
   const supabase = await createClient();
-  const [p, c, cu, o, s] = await Promise.all([
+  const [p, c, cu, o, s, pp] = await Promise.all([
     supabase.from("products").select("*").order("name"),
     supabase.from("campaigns").select("*, campaign_products(product_id, price_override)").order("preorder_open", { ascending: false }),
     supabase.from("customers").select("*").order("name"),
-    supabase.from("orders").select("*, order_items(product_id, qty, unit_price, unit_cost, sort_order)").order("fulfill_date").order("order_no"),
+    supabase.from("orders").select("*, order_items(product_id, qty, unit_price, unit_cost, card_note, sort_order)").order("fulfill_date").order("order_no"),
     supabase.from("settings").select("*").maybeSingle(),
+    supabase.from("payments").select("id, order_id, amount, paid_at").eq("status", "pending").order("paid_at"),
   ]);
-  const error = p.error ?? c.error ?? cu.error ?? o.error ?? s.error;
+  const error = p.error ?? c.error ?? cu.error ?? o.error ?? s.error ?? pp.error;
   if (error) throw new Error(`Gagal memuat data preorder: ${error.message}`);
   return {
     products: (p.data as ProductRow[]).map(mapProduct),
@@ -100,8 +120,11 @@ export const loadPreorderData = cache(async (): Promise<PreorderData> => {
     orders: (o.data as OrderRow[]).map(mapOrder),
     settings: s.data ? mapSettings(s.data as SettingsRow) : mapSettings({
       business_name: "Mami I Pâtisserie", business_whatsapp: null, bank_name: null, bank_account_no: null,
-      bank_account_name: null, qris_note: null, pickup_address: null, default_dp_percent: 50,
+      bank_account_name: null, qris_note: null, pickup_address: null, default_dp_percent: 40,
     }),
+    pendingProofs: (pp.data as { id: string; order_id: string; amount: Num; paid_at: string }[]).map((r) => ({
+      paymentId: r.id, orderId: r.order_id, amount: num(r.amount), paidAt: r.paid_at,
+    })),
   };
 });
 
@@ -113,7 +136,7 @@ export interface PaymentWithUrl extends Payment {
 export async function loadPayments(orderId: string): Promise<PaymentWithUrl[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("payments").select("id, amount, method, proof_path, paid_at, note")
+    .from("payments").select("id, amount, method, proof_path, paid_at, note, status")
     .eq("order_id", orderId).order("paid_at");
   if (error) throw new Error(`Gagal memuat pembayaran: ${error.message}`);
   const rows = data as PaymentRow[];
@@ -124,7 +147,7 @@ export async function loadPayments(orderId: string): Promise<PaymentWithUrl[]> {
     for (const u of urls ?? []) if (u.path && u.signedUrl) signed.set(u.path, u.signedUrl);
   }
   return rows.map((r) => ({
-    id: r.id, amount: num(r.amount), method: r.method, proofPath: r.proof_path, paidAt: r.paid_at, note: r.note,
+    id: r.id, amount: num(r.amount), method: r.method, proofPath: r.proof_path, paidAt: r.paid_at, note: r.note, status: r.status,
     proofUrl: r.proof_path ? signed.get(r.proof_path) ?? null : null,
   }));
 }
@@ -132,5 +155,36 @@ export async function loadPayments(orderId: string): Promise<PaymentWithUrl[]> {
 /** Public URL of a product photo (bucket is public). */
 export function productPhotoUrl(path: string | null): string | null {
   if (!path) return null;
+  if (path.startsWith("/")) return path; // site image (public/images)
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-photos/${path}`;
+}
+
+export interface WasteEntry {
+  id: string;
+  date: string;
+  productId: string | null;
+  ingredientId: string | null;
+  qty: number;
+  reason: WasteReason;
+  note: string | null;
+  createdBy: string | null;
+}
+
+/** "Selesai dibuat" ticks (product ids per production date) and the waste log, from `from` onward. */
+export async function loadKitchen(from: string, to: string): Promise<{ marks: Map<string, Set<string>>; waste: WasteEntry[] }> {
+  const supabase = await createClient();
+  const [m, w] = await Promise.all([
+    supabase.from("production_marks").select("production_date, product_id").gte("production_date", from).lte("production_date", to),
+    supabase.from("waste_logs").select("*").gte("waste_date", from).lte("waste_date", to).order("waste_date", { ascending: false }).order("created_at", { ascending: false }),
+  ]);
+  const error = m.error ?? w.error;
+  if (error) throw new Error(`Gagal memuat data dapur: ${error.message}`);
+  const marks = new Map<string, Set<string>>();
+  for (const r of m.data as { production_date: string; product_id: string }[]) {
+    marks.set(r.production_date, (marks.get(r.production_date) ?? new Set()).add(r.product_id));
+  }
+  const waste = (w.data as { id: string; waste_date: string; product_id: string | null; ingredient_id: string | null; qty: Num; reason: WasteReason; note: string | null; created_by: string | null }[]).map((r) => ({
+    id: r.id, date: r.waste_date, productId: r.product_id, ingredientId: r.ingredient_id, qty: num(r.qty), reason: r.reason, note: r.note, createdBy: r.created_by,
+  }));
+  return { marks, waste };
 }

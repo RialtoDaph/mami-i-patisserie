@@ -83,7 +83,7 @@ update public.settings set
   bank_account_name = 'Mami I Patisserie (DUMMY)',
   qris_note = 'QRIS tersedia, minta kodenya via WhatsApp (DUMMY)',
   pickup_address = 'Jl. Contoh No. 1, Bandung (DUMMY)',
-  default_dp_percent = 50;
+  default_dp_percent = 40;
 
 insert into public.products
   (id, name, description, recipe_id, bundle_id, units_per_product, price, show_on_website,

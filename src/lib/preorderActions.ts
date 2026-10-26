@@ -143,6 +143,22 @@ export async function addPayment(input: PaymentInput): Promise<ActionResult> {
   return {};
 }
 
+/** Website proof checked by staff: "Bukti cocok" counts it as paid (status advances), "Tolak" ignores it. */
+export async function reviewPayment(id: string, status: "matched" | "rejected"): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const { data, error } = await supabase
+    .from("payments")
+    .update({ status, matched_by: claims?.claims?.sub ?? null, matched_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "pending")
+    .select("id");
+  if (error) return { error: friendlyError(error) };
+  if (!data?.length) return { error: "Bukti ini sudah dicek, atau Anda tidak punya akses." };
+  refresh();
+  return {};
+}
+
 export async function deletePayment(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("payments").delete().eq("id", id).select("proof_path");
@@ -254,6 +270,9 @@ export interface CampaignInput {
   fulfillStart: string;
   fulfillEnd: string;
   dpPercent: number | null;
+  /** Max boxes of campaign products (null = unlimited) and the revenue target shown on Target & Rencana. */
+  quota: number | null;
+  targetRevenue: number | null;
   isActive: boolean;
   notes: string;
   products: { productId: string; priceOverride: number | null }[];
@@ -268,8 +287,11 @@ export async function saveCampaign(input: CampaignInput): Promise<ActionResult> 
   }
   if (input.dpPercent != null && !(input.dpPercent >= 0 && input.dpPercent <= 100)) return { error: "DP harus 0–100%." };
 
+  if (input.quota != null && !(Number.isInteger(input.quota) && input.quota > 0)) return { error: "Kuota harus angka bulat lebih dari 0, atau kosong." };
+  if (input.targetRevenue != null && !(input.targetRevenue >= 0)) return { error: "Target omzet tidak valid." };
+
   const supabase = await createClient();
-  const { error } = await supabase.rpc("save_campaign", {
+  const { data: id, error } = await supabase.rpc("save_campaign", {
     p_id: input.id,
     p_campaign: {
       name: input.name,
@@ -284,6 +306,9 @@ export async function saveCampaign(input: CampaignInput): Promise<ActionResult> 
     p_products: input.products.map((p) => ({ product_id: p.productId, price_override: p.priceOverride })),
   });
   if (error) return { error: friendlyError(error) };
+  // save_campaign predates these columns; set them on the saved row.
+  const { error: extraError } = await supabase.from("campaigns").update({ quota: input.quota, target_revenue: input.targetRevenue }).eq("id", id as string);
+  if (extraError) return { error: friendlyError(extraError) };
   refresh();
   redirect("/app/campaign");
 }

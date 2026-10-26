@@ -12,12 +12,16 @@ Context for every Claude Code session working on this repository. Read this firs
 
 ## Team & roles
 
-| Person | Job | Role (`app_role`) | Notes |
+| Person | Job | Role (`app_role`) | Tabs (src/lib/appNav.ts) |
 |---|---|---|---|
-| Alto | Owner, lives in Germany, runs the system & finances | `owner` | |
-| Nana | Brand & marketing | `admin` | |
-| Mami | Production in Bandung | `produksi` | Uses a phone, not very technical. UI must work for her without long training. |
-| (future) | Outlet manager | `manager` | Role must exist now, not used yet. |
+| Alto | Owner, lives in Germany, runs the system & finances | `owner` | all + Alto-only: Akun tim, targets, approval limits, payroll paid |
+| Nana | Owner: brand & marketing | `admin` | all |
+| Mami | Owner: production, recipes, standards | `admin` | all (decided 2026-10-24: prototype wins over APP.md) |
+| Pastry chef | Production | `produksi` | beranda, order, produksi, tim, alat; may only move orders to Diproduksi/Siap |
+| Manager kafe | Cafe manager | `manager` | kafe, mingguan, target, tim, persetujuan, alat |
+| Barista, waiter, part-timer | Crew | `crew` | tim, alat (no order/customer/costing data) |
+
+Mami uses a phone and is not very technical: the UI must work for her without long training.
 
 ## Stack
 
@@ -95,13 +99,50 @@ Context for every Claude Code session working on this repository. Read this firs
   (+ `/export` CSV), params in `src/lib/shoppingParams.ts`. `order_items.unit_cost` = HPP snapshot set by `saveOrder`.
 - `src/lib/preorderData.ts` (loads all preorder data), `src/lib/preorderActions.ts`, `src/lib/upload.ts`
   (client-side photo compress + Storage upload), `src/lib/errors.ts`.
-- Nav: Beranda `/app` (dashboard for owner/admin, production for others) · Order `/app/order` · Produksi
-  `/app/produksi` · Costing `/app/costing` (+ `/app/bahan`, `/app/resep`, `/app/paket`) · Lainnya `/app/lainnya`
-  (`/app/pelanggan`, `/app/produk`, `/app/campaign`, `/app/pengaturan`). CSV: `/app/costing/export`, `/app/order/export`.
-- Public site: route group `src/app/(site)` (`/`, `/katalog`, `/hampers`, `/kontak`, `/keranjang`), components in
-  `src/components/site`, logic in `src/lib/site` (cart, WhatsApp message, anon catalog loader), copy in
-  `src/content/site.ts`, brand tokens in `src/app/brand.css`. Pages use ISR (`revalidate = 300`).
+- App nav (stage 5a): 6 groups in `src/lib/appNav.ts` (pure, tested): Beranda · Order (Order, Produksi) · Kafe (Laporan
+  kafe, Mingguan) · Uang (Laporan, Costing, Target) · Tim (Tim, Persetujuan) · Lainnya (Menu lain, Alat; Legal + Konten open
+  from the Lainnya list). Costing keeps `/app/bahan`, `/app/resep`, `/app/paket`; Lainnya keeps `/app/pelanggan`, `/app/produk`,
+  `/app/campaign`, `/app/pengaturan`, `/app/lainnya/akun` (Akun tim, owner only). Shell = `src/components/app/AppShell.tsx`
+  (top bar ≥ 760px, bottom nav on phones, pill tabs / underline tabs, "Semua menu", Ctrl K). Route guard per role in
+  `src/app/app/template.tsx` (path from the proxy's `x-pathname` header). Sections not built yet show `ComingSoon`.
+  CSV: `/app/costing/export`, `/app/order/export`.
+- Team login (stage 5a): `/login` shows "Siapa yang masuk?" + 4-digit PIN keypad only on devices Alto registered in
+  Akun tim (httpOnly cookie `mami_device`, sha256 in `devices`); elsewhere email + password. `src/lib/teamDevice.ts`
+  (server-only), `src/lib/teamAuth.ts` (actions): `pin_check` RPC (5 wrong → locked 15 min) → admin magic-link token →
+  `verifyOtp` on the server = normal Supabase session. PIN-only people get an `@mami-i.invalid` email (never mailed).
+  Needs `SUPABASE_SECRET_KEY` (`src/lib/supabase/admin.ts`). Sign-out is `scope: local` (shared tablets).
+- App 5b: Beranda `src/app/app/page.tsx` (owners: KPI, focus list, 30-day chart, "Perlu perhatian"; pastry chef:
+  "Hari ini bikin apa" with "Selesai dibuat" ticks, hand-overs with "Tandai Siap", tomorrow). Pure helpers + tests in
+  `src/lib/preorder/home.ts` (month revenue by fulfil date, late DP, campaign pace) and `kitchen.ts` (stock state,
+  `countUnit` = kitchen counts in kg / liter / pcs, waste reasons, `canSetStatus` mirror of the SQL guard).
+  Order = `OrderList.tsx` (search + chips) + detail; on ≥ 1000px the detail shows the list on the left. Produksi tabs:
+  Jadwal (campaign table + day cards with recipe/ingredient needs) · Belanja (subtracts kitchen stock by default,
+  `stok=0` off) · Stok (`/app/produksi/stok`) · Waste (`/app/produksi/waste`). Actions in `src/lib/kitchenActions.ts`.
+  App UI blocks: `src/components/app/ui.tsx` (Panel, SectionLabel, ListRow, LocalTabs, ChipLink, Kpi, Clocks, StatusPill),
+  `form.tsx` (AppField, NumberInput with dot separators, FormMessage), `LineChart.tsx`.
+- App 5c: Persetujuan `/app/setuju` (cards + Setujui/Tolak, "+ Ajukan" form, rules panel for Alto; `?ajukan=1&judul=…&nominal=…
+  &milestone=…` prefills from a milestone) and Target & Rencana `/app/target` (`?v=goals|roadmap`, `p=tahun`, `m=YYYY-MM`,
+  `y`, `area`, `ry`; params in `target/params.ts`). Pure logic + tests in `src/lib/plans` (approvals: needsApproval/canDecide,
+  goals: milestoneState "telat", targets: monthTarget inheritance, yearTarget, actuals, progress/projection, time: WIB +
+  Jerman). Data `src/lib/plansData.ts` (`team_names` RPC for names), actions `src/lib/planActions.ts`. Beranda owners get
+  approval/target/milestone items via `planItems` in `src/app/app/page.tsx`.
+- Public site (redesign 2026-10): route group `src/app/(site)` (`/`, `/menu`, `/hampers`, `/tentang`, `/faq`, `/kontak`,
+  `/keranjang` = 3-step checkout; `/katalog` redirects to `/menu`). Page bodies in `src/components/site/pages`, header/
+  drawers/footer in `src/components/site`. Data (stage 4): `src/lib/site/data.ts` (`loadSiteData`, server-only, React cache)
+  calls the anon RPCs `public_settings`, `public_catalog`, `public_campaigns`, `public_shipping_areas`; on error it falls
+  back to empty data with orders closed. Pages revalidate every 60 s. `src/content/catalog.ts` is presentation only (box
+  contents, cafe menu, keyed by product slug); `campaigns.ts` (date formatting), `shipping.ts` (pickup slots), `site.ts`
+  (contact PLACEHOLDERs). Pure logic + tests in `src/lib/site` (cart, checkout: DP/date rules). Checkout: `orderActions.ts`
+  `placeWebOrder` → RPC `place_web_order`, proof photo uploaded by the browser to `payment-proofs/web/<order_id>/<token>.jpg`,
+  then `attachWebPayment` → RPC `attach_web_payment` (payment status `pending` until staff tap "Bukti cocok"). Motion layer (snow, lights, Natal intro, tilt+glare, scroll reveal, fly-to-cart) lives in
+  `src/components/site/SiteMotion.tsx`; pages only mark elements (`data-tilt`, `data-glare`, `data-twinkle`, `#nt-*`).
+  Everything is skipped under prefers-reduced-motion. Snow follows the snow setting, independent of mode Natal (as in the prototype).
 - Preorder data is loaded whole per request; revisit with pagination/server filters if orders grow to thousands.
+- Brand system (redesign 2026-10): tokens in `src/app/brand.css`, base components in `src/components/brand`
+  (Button/ButtonLink/IconButton, PostCard/AppCard, Chip/Tag, Field/Input, Photo/Polaroid/ArchFrame/Sticker, Awning,
+  DottedPrice, Script/SectionHead, Logo, Icon). Icons = inline SVG from Material Symbols Rounded: add a name in
+  `scripts/gen-icons.mjs` and run `node scripts/gen-icons.mjs`. Reference sheet at `/dev/komponen` (dev only).
+  Photos from the design handoff live in `public/images` (downscaled).
 - Checks: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.
 - PostgREST note: `recipes`↔`recipe_items` has two FKs, so embed with `recipe_items!recipe_items_recipe_id_fkey(...)`.
 
@@ -110,11 +151,17 @@ Context for every Claude Code session working on this repository. Read this firs
 - Supabase project "Mami i Patiserrie" (ref `mxkmavpebiawiknnbxam`, eu-west-1). Migrations
   20260926000001–03, 20260927000001–02 (preorder) + full DUMMY seed applied on 2026-09-27.
   20260927000003 (public site) applied on 2026-09-27. 20260928000001 (order_items.unit_cost) applied on 2026-09-27.
+  20261022000001 (web checkout) + 20261022000002 (website content) applied on 2026-10-23 (partly via MCP, the rest by Alto
+  in the SQL Editor because MCP calls with drop/delete/update hung; both are recorded in schema_migrations).
+  20261024000001 (crew role) + 20261024000002 (team login) applied by Alto in the SQL Editor on 2026-10-24.
+  20261025000001 (kitchen) applied via MCP on 2026-10-24; recorded live as version 20261024115039 "kitchen".
+  20261026000001 (approvals & targets) applied via MCP on 2026-10-26; recorded live as 20261026144454 "approvals_targets".
   New migrations: add a file in
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
   Production domain: https://mami-i-patisserie.vercel.app (site URL falls back to VERCEL_PROJECT_PRODUCTION_URL).
-  Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key).
+  Env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key), `SUPABASE_SECRET_KEY` (server only,
+  PIN login + Akun tim; not set yet, see reminders).
 - Users: altodaphino@gmail.com = owner (Alto). Nana/Mami accounts not created yet.
 
 ## Pending reminders for Alto (remind at the end of each phase until done)
@@ -124,10 +171,13 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
 1. Website WhatsApp number: set `NEXT_PUBLIC_WHATSAPP_NUMBER` in Vercel (no number yet; WA buttons hidden until then).
    Also `NEXT_PUBLIC_INSTAGRAM` (and optionally `NEXT_PUBLIC_SITE_URL`).
 2. Supabase Auth: turn off "Allow new users to sign up"; set Site URL to https://mami-i-patisserie.vercel.app.
-3. Create Nana (admin) and Mami (produksi) accounts, then set roles via SQL.
+3. Set `SUPABASE_SECRET_KEY` in Vercel (secret key; the existing `SUPABASE_Secret_Key` env can be renamed), redeploy, then in
+   Lainnya → Akun tim: register the team devices, give everyone a PIN, add Nana & Mami (Owner) and the team.
 4. Check the site in an incognito window; if Vercel login appears, disable Vercel Authentication (Deployment Protection).
 5. Before real orders: remove DUMMY data (supabase/remove_dummy.sql, ask first), enter real products (Tampil di website),
    replace DUMMY bank/QRIS/pickup in Lainnya → Pengaturan, test one photo upload, final website copy from Nana.
+   Website: real prices (then `price_pending = false`), real shipping fees (then `settings.shipping_is_sample = false`),
+   QRIS image, then `settings.web_orders_open = true`. Until the stage 5 settings screen exists these are set via SQL.
 6. Optional: delete the unused `SUPABASE_Secret_Key` / `SUPABASE_Publishkey` envs; Vercel Function Region → dub1;
    Supabase leaked password protection. Open question: does PBJT 10% apply to online sales?
 
@@ -183,7 +233,7 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   5. DUMMY products are hidden on the public site unless `NEXT_PUBLIC_SHOW_DUMMY=1` (for previews).
   6. Contact/story copy lives in `src/content/site.ts`, with PLACEHOLDERs clearly marked until Alto/Nana provide it.
      WhatsApp number via `NEXT_PUBLIC_WHATSAPP_NUMBER`, Instagram via `NEXT_PUBLIC_INSTAGRAM`, and site URL via `NEXT_PUBLIC_SITE_URL`.
-  7. Fonts: EB Garamond (headings; replaced Cormorant Garamond, whose packaged "â" renders misplaced) + Inter (body) via next/font.
+  7. Fonts: superseded by the 2026-10 redesign (Libre Baskerville + Instrument Sans + Kalam).
   8. Public data only through read-only SECURITY DEFINER RPCs (`public_catalog`, `public_campaigns`) granted to anon;
      base tables stay closed to anon. Brand colors live in `src/app/brand.css` (see palette decision below).
 - 2026-09-27: **Brand palette final** (from Alto/Nana), priority order: 1. Butter yellow `#F5E8AA` (~60%),
@@ -203,6 +253,57 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   4. produksi (Mami) sees estimated costs in the shopping list; profit (dashboard, order detail, CSV columns) is owner/admin.
   5. Gross profit = (subtotal − discount) − HPP; shipping excluded. Counts all non-cancelled orders. Per-product
      profit is before order discounts. "Sudah dibeli" ticks live in localStorage per device/range.
+- 2026-10-22: **Full redesign from the design handoff** ("Redesign web mami keseluruhan", docs: README/WEB/APP/DATA/
+  KEPUTUSAN/CHECKLIST). Alto asked to rebuild it stage by stage per CHECKLIST, reviewing each stage at 360/768/1280.
+  Stage 1 done: fonts Libre Baskerville 700 + italic 400 (headings), Instrument Sans 400–700 (text/UI), Kalam 400
+  (handwritten labels), self-hosted via @fontsource in the root layout (web + app). Natal green `#2d4a3a` is allowed
+  ONLY for the Christmas campaign; oak `#b9864f/#9c6b3f/#7a5230` only for the Etalase facade. App UI pattern:
+  radius 6px, 1.5px lines, card bg butter-50. Web: pill CTAs (min 52px), postcard cards (radius 0).
+- 2026-10-22 (Alto): hero Beranda = "sekarang" (arched frame + sticker 24); Etalase/samping/masuk are archived, not built.
+  Mode Natal = takeover as in the prototype: /, /menu, /hampers, /tentang, /faq show the Natal page; nav Hampers (#paket) ·
+  Cara pesan (#cara) · FAQ (#tanya) · Kontak; /kontak and /keranjang stay normal. Normal pages are built too.
+  Rule: when docs and prototype differ, the prototype wins; ask when unsure.
+- 2026-10-23: **Stage 4 (Supabase for the website)**, Alto: "atur aja / gas" (Claude's recommendations):
+  1. POS stays Majoo. No transactional stock; kitchen stock later only as a manual count + min stock (stage 5).
+  2. Keep Supabase Auth (email+password); PIN/role changes come with the app in stage 5.
+  3. Extend existing tables instead of a new schema. Stage 4 = website data only; app tables come in stage 5.
+  4. Settings flags: `mode_natal` (takeover), `snow_mode` (hero/semua/mati), `web_orders_open` (checkout accepts orders;
+     false until real prices/fees/bank/QRIS), `shipping_is_sample`, `dp_round` (Rp 50.000), `min_lead_days` (2),
+     `pay_timeout_min` (60). Default DP is 40%: DP = 40% of total rounded UP to Rp 50.000, capped at the total.
+  5. Web orders: channel `web`, status `menunggu_dp`, `expires_at` = now + 60 min; unpaid ones are cancelled lazily by
+     `cancel_expired_web_orders()` on the next web order (scheduled job in stage 6). Proof → payment `pending`; only
+     `matched` payments count towards amount_paid. Payments recorded in the app are `matched` right away.
+  6. Quotas: weekly capacity (existing) + `products.daily_quota` (hampers) + `campaigns.quota` (boxes per campaign).
+  7. Flat shipping fee per area (`shipping_areas`, SAMPLE fees). Prices from the prototype are stored with
+     `price_pending = true`: regular products show "harga menyusul"; campaign packages show their (sample) price
+     and checkout says "Harga masih contoh, belum final".
+- 2026-10-24: **Stage 5 (internal app)** plan approved: sub-stages 5a login/roles/nav → 5b Beranda per person, Order,
+  Produksi (+ manual stock count, min stock, waste) → 5c Persetujuan + Target → 5d Tim (shift, absen, izin) → 5e gaji &
+  slip → 5f Kafe (Majoo) → 5g Laporan → 5h Alat, Konten, Legal; review at 360/768/1280 after each. Alto's answers:
+  1. PIN login only on devices registered once by Alto (email + password); 5 wrong PINs lock 15 minutes.
+  2. Roles: keep the DB enum, add `crew`; Nana and Mami are `admin` ("Owner"), pastry chef `produksi` (prototype wins).
+  3. Majoo export: no sample file yet, so 5f starts with manual entry + attached file; parsing comes when a file exists.
+  4. Order of sub-stages left to Claude; migrations go live after local tests (SQL Editor file when MCP can't run them).
+- 2026-10-24: **5b** (Claude's calls, per the approved plan): stock = manual count per ingredient in kg / liter / pcs
+  plus a minimum set by the kitchen (owner/admin/produksi); no stock ledger (Majoo). Waste log for products or
+  ingredients with a reason; value = HPP or ingredient price. "Selesai dibuat" = `production_marks` per day/product.
+  Beranda revenue = pre-order only until Majoo reports (5f); target bars come with 5c. "DP telat" = DP still short
+  and ordered ≥ 2 days ago or due within 3 days. Payment label `dp_ok` is "DP cukup" (prototype).
+- 2026-10-26: **5c** (Claude's calls, per the approved plan; prototype wins):
+  1. Approval kinds alat / harga / karyawan / campaign / lain. harga + karyawan always need Alto; campaign above the
+     campaign limit; everything else above the alat limit; otherwise status `dicatat`. Status is set only by the RPCs
+     `submit_approval` / `decide_approval` (no direct writes). Submit: owner/admin/manager. Rules: Alto only.
+  2. "Mami boleh memutuskan" = `profiles.approval_backup` (checkbox in Akun tim, only for role admin), because Nana and
+     Mami share the admin role. The backup may decide only after `fallback_hours`.
+  3. Targets per month inherit the latest earlier month; no default numbers (empty = "Belum ada target"). Yearly target =
+     sum of 12 months unless Alto sets one. Actuals = product sales by fulfil date (no shipping/discount); hampers =
+     products with web category hampers; food cost = HPP snapshot (else current HPP) / sales. Cafe revenue joins in 5f.
+     Beranda "Omzet bulan ini" now uses the same product-sales figure.
+  4. Goals/milestones: Alto creates/edits; owners change any milestone status, the manager only where they are PIC
+     (`set_milestone_status`). PIC = a person from profiles. "Telat" is computed. A milestone with a cost gets
+     "Ajukan biaya ke Persetujuan" (one open request per milestone). Milestone edit is a pencil (instead of the "…" menu).
+  5. Campaign form gained Kuota + Target omzet (shown under "Target per campaign"). Roadmap: goals + campaigns; the
+     "Akan ada" tools row comes with Alat (5h). Costing price edits are not yet routed into Persetujuan (submit kind harga).
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->

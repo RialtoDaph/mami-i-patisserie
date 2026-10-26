@@ -23,45 +23,47 @@
 body {
   background: var(--color-cream);
   color: var(--color-ink);
+  font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Internal app UI pattern: radius 6px, 1.5px lines, tap targets ≥ 44px, inputs 16px (no iOS zoom). */
 @utility btn {
-    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-base font-semibold transition active:scale-[0.98] disabled:opacity-50;
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-md px-5 text-base font-bold transition active:scale-[0.98] disabled:opacity-50;
 }
 
 @utility btn-primary {
-    @apply btn bg-cocoa text-white hover:bg-cocoa-dark;
+    @apply btn bg-brand-wine text-brand-butter hover:brightness-[.92];
 }
 
 @utility btn-secondary {
-    @apply btn border border-cocoa/30 bg-white text-cocoa hover:bg-crust;
+    @apply btn border-[1.5px] border-line-strong bg-white text-cocoa hover:bg-brand-butter-50;
 }
 
 @utility btn-danger {
-    @apply btn border border-bad/40 bg-white text-bad hover:bg-bad-bg;
+    @apply btn border-[1.5px] border-bad/50 bg-white text-bad hover:bg-bad-bg;
 }
 
 @utility card {
-    @apply rounded-2xl border border-black/5 bg-white p-4 shadow-sm;
+    @apply rounded-md border-[1.5px] border-line bg-brand-butter-50 p-[18px];
 }
 
 @utility field-label {
-    @apply mb-1 block text-sm font-semibold text-muted;
+    @apply mb-1 block text-[13px] font-bold text-brand-pistachio-deep;
 }
 
 @utility input {
-    @apply block min-h-12 w-full rounded-xl border border-black/15 bg-white px-3 text-base text-ink outline-none focus:border-cocoa focus:ring-2 focus:ring-cocoa/20;
+    @apply block min-h-12 w-full rounded-md border-[1.5px] border-line bg-white px-3 text-base text-ink outline-none focus:border-brand-wine focus:ring-3 focus:ring-brand-wine/12;
 }
 
 @utility chip {
-    @apply inline-flex min-h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold;
+    @apply inline-flex min-h-11 items-center justify-center rounded-full border-[1.5px] px-4 text-sm font-bold whitespace-nowrap;
 }
 
 @utility chip-on {
-    @apply chip border-cocoa bg-cocoa text-white;
+    @apply chip border-cocoa bg-cocoa text-brand-butter;
 }
 
 @utility chip-off {
-    @apply chip border-black/15 bg-white text-ink;
+    @apply chip border-line-strong bg-white text-ink;
 }

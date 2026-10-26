@@ -18,4 +18,5 @@ export const ROLE_LABEL: Record<AppRole, string> = {
   admin: "Admin",
   produksi: "Produksi",
   manager: "Manager",
+  crew: "Crew",
 };
