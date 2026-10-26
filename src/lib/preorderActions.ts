@@ -270,6 +270,9 @@ export interface CampaignInput {
   fulfillStart: string;
   fulfillEnd: string;
   dpPercent: number | null;
+  /** Max boxes of campaign products (null = unlimited) and the revenue target shown on Target & Rencana. */
+  quota: number | null;
+  targetRevenue: number | null;
   isActive: boolean;
   notes: string;
   products: { productId: string; priceOverride: number | null }[];
@@ -284,8 +287,11 @@ export async function saveCampaign(input: CampaignInput): Promise<ActionResult> 
   }
   if (input.dpPercent != null && !(input.dpPercent >= 0 && input.dpPercent <= 100)) return { error: "DP harus 0–100%." };
 
+  if (input.quota != null && !(Number.isInteger(input.quota) && input.quota > 0)) return { error: "Kuota harus angka bulat lebih dari 0, atau kosong." };
+  if (input.targetRevenue != null && !(input.targetRevenue >= 0)) return { error: "Target omzet tidak valid." };
+
   const supabase = await createClient();
-  const { error } = await supabase.rpc("save_campaign", {
+  const { data: id, error } = await supabase.rpc("save_campaign", {
     p_id: input.id,
     p_campaign: {
       name: input.name,
@@ -300,6 +306,9 @@ export async function saveCampaign(input: CampaignInput): Promise<ActionResult> 
     p_products: input.products.map((p) => ({ product_id: p.productId, price_override: p.priceOverride })),
   });
   if (error) return { error: friendlyError(error) };
+  // save_campaign predates these columns; set them on the saved row.
+  const { error: extraError } = await supabase.from("campaigns").update({ quota: input.quota, target_revenue: input.targetRevenue }).eq("id", id as string);
+  if (extraError) return { error: friendlyError(extraError) };
   refresh();
   redirect("/app/campaign");
 }

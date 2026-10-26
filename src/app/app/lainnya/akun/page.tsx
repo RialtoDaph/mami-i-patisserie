@@ -18,7 +18,7 @@ export default async function TeamAccountsPage() {
 
   const supabase = await createClient();
   const [{ data: profiles }, { data: pins }, { data: devices }, myHash] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, title, role, is_active, sort_order").order("sort_order").order("full_name"),
+    supabase.from("profiles").select("id, full_name, title, role, is_active, approval_backup, sort_order").order("sort_order").order("full_name"),
     supabase.rpc("pin_status"),
     supabase.from("devices").select("id, name, token_hash, created_at, last_used_at, revoked_at").is("revoked_at", null).order("created_at"),
     deviceHash(),
@@ -30,6 +30,7 @@ export default async function TeamAccountsPage() {
     title: p.title,
     role: (p.role as AppRole | null) ?? null,
     isActive: p.is_active,
+    approvalBackup: p.approval_backup,
     hasPin: pinMap.has(p.id),
     locked: pinMap.get(p.id) ?? false,
     isMe: p.id === user.id,

@@ -10,7 +10,11 @@ import {
 } from "@/lib/preorder";
 import { pricePerBaseUnit } from "@/lib/costing";
 import { formatNumber, formatPercent, formatRupiah } from "@/lib/format";
-import { EmptyNote, Kpi, ListRow, Panel, PanelTitle, SectionLabel } from "@/components/app/ui";
+import { Clocks, EmptyNote, Kpi, ListRow, Panel, PanelTitle, SectionLabel } from "@/components/app/ui";
+import { loadPlans, type PlansData } from "@/lib/plansData";
+import {
+  actuals, canDecide, isOverdue, milestoneState, monthRevenueTarget, monthTarget, openMilestones, progress, requestTime,
+} from "@/lib/plans";
 import { LineChart } from "@/components/app/LineChart";
 import { Icon, type IconName } from "@/components/brand";
 import { StatusBadge } from "@/components/preorder";
@@ -36,10 +40,15 @@ export default async function HomePage() {
 async function OwnerHome({ user, pre, costing }: { user: CurrentUser; pre: PreorderData; costing: FullCostingData }) {
   const today = todayJakarta();
   const month = monthRange(today);
-  const kitchen = await loadKitchen(month.from, today);
+  const [kitchen, plans] = await Promise.all([loadKitchen(month.from, today), loadPlans()]);
+  const now = requestTime();
   const costs = productCosts(pre.products, costing);
   const monthOrders = ordersBetween(pre.orders, month.from, month.to);
-  const revenue = monthOrders.reduce((s, o) => s + o.total, 0);
+  const hampers = new Set(pre.products.filter((p) => p.webCategory === "hampers").map((p) => p.id));
+  const sales = actuals(pre.orders, month.from, month.to, (id) => hampers.has(id), costs);
+  const revenue = sales.preorder + sales.hampers + (sales.cafe ?? 0);
+  const revenueTarget = monthRevenueTarget(monthTarget(plans.monthTargets, today.slice(0, 7)).values);
+  const revenueProgress = progress(revenue, revenueTarget, { elapsed: Number(today.slice(8, 10)), total: Number(month.to.slice(8, 10)) });
   const profit = profitStats(monthOrders, pre.products, costs);
   const campaign = currentCampaign(pre.campaigns, today);
   const used = campaign ? campaignUsed(campaign, pre.orders) : 0;
@@ -56,10 +65,11 @@ async function OwnerHome({ user, pre, costing }: { user: CurrentUser; pre: Preor
   const firstProofOrder = pre.pendingProofs[0]?.orderId;
   const webToday = pre.orders.filter((o) => o.channel === "web" && o.createdAt.slice(0, 10) >= addDays(today, -1) && o.status !== "batal");
 
-  // Focus list: only what exists today. Targets, approvals and weekly reports join in later stages.
-  const items: { icon: IconName; title: string; sub: string; href: string }[] = [];
+  // Focus list: approvals and plans first, then orders and kitchen. Weekly reports join in stage 5f.
+  const items: { icon: IconName; title: string; sub: string; href: string; hot?: boolean }[] = planItems(user, plans, today, now, revenue, revenueTarget, revenueProgress.projection);
   if (pre.pendingProofs.length) {
     items.push({
+      hot: true,
       icon: "payments",
       title: `${pre.pendingProofs.length} bukti bayar menunggu dicek`,
       sub: `Total ${formatRupiah(pre.pendingProofs.reduce((s, p) => s + p.amount, 0))} · cocokkan dengan mutasi/QRIS lalu tekan "Bukti cocok".`,
@@ -91,18 +101,17 @@ async function OwnerHome({ user, pre, costing }: { user: CurrentUser; pre: Preor
   }
 
   const focusTitle = user.role === "owner" ? "Untuk keputusanmu" : `Fokus ${user.fullName || "kamu"}`;
-  const clock = (tz: string) => {
-    const d = new Date();
-    return {
-      time: d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: tz }).replace(".", ":"),
-      day: d.toLocaleDateString("id-ID", { weekday: "long", timeZone: tz }),
-    };
-  };
 
   return (
     <div className="mx-auto flex max-w-[1090px] flex-col gap-3">
       <div className="grid gap-3 nav:grid-cols-3">
-        <Kpi label="Omzet bulan ini" value={compactRp(revenue)} note={`Pre-order ${monthOrders.length} order · omzet kafe menyusul (laporan Majoo)`} />
+        <Kpi
+          label="Omzet bulan ini"
+          value={compactRp(revenue)}
+          progress={revenueTarget ? revenueProgress.bar : null}
+          tone={revenueProgress.ok ? "olive" : "wine"}
+          note={`${revenueTarget ? `${revenueProgress.pct}% dari target ${compactRp(revenueTarget)} · ` : ""}pre-order ${monthOrders.length} order · omzet kafe menyusul`}
+        />
         <Kpi
           label="Laba kotor bulan ini"
           value={compactRp(profit.profit)}
@@ -126,30 +135,14 @@ async function OwnerHome({ user, pre, costing }: { user: CurrentUser; pre: Preor
       <Panel className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <SectionLabel>{focusTitle}</SectionLabel>
-          {user.role === "owner" && (
-            <span className="flex gap-2">
-              {[
-                ["Indonesia", "Asia/Jakarta"],
-                ["Jerman", "Europe/Berlin"],
-              ].map(([label, tz]) => {
-                const c = clock(tz);
-                return (
-                  <span key={tz} className="flex items-baseline gap-1.5 rounded-full border-[1.5px] border-brand-espresso/18 bg-white px-3 py-1">
-                    <span className="text-[11px] font-bold tracking-wider text-brand-pistachio-deep uppercase">{label}</span>
-                    <b className="font-display text-sm tabular-nums">{c.time}</b>
-                    <span className="text-[11px] text-brand-muted capitalize">{c.day}</span>
-                  </span>
-                );
-              })}
-            </span>
-          )}
+          {user.role === "owner" && <Clocks now={now} />}
         </div>
         {items.length === 0 ? (
           <p className="border-t border-brand-espresso/10 px-4 py-5 text-[15px] text-brand-muted">Semua beres. Tidak ada yang perlu diputuskan sekarang.</p>
         ) : (
           <div className="border-t border-brand-espresso/10">
             {items.map((it, n) => (
-              <ListRow key={it.title} first={n === 0} href={it.href} icon={it.icon} title={it.title} sub={it.sub} />
+              <ListRow key={it.title} first={n === 0} href={it.href} icon={it.icon} title={it.title} sub={it.sub} tone={it.hot === false ? "muted" : "wine"} />
             ))}
           </div>
         )}
@@ -330,4 +323,66 @@ async function KitchenHome({ pre, costing }: { pre: PreorderData; costing: FullC
       )}
     </div>
   );
+}
+
+// ---- Approvals & plans on the owners' focus list --------------------------------
+
+const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+function planItems(
+  user: CurrentUser, plans: PlansData, today: string, now: number, revenue: number, target: number | null, projection: number | null,
+): { icon: IconName; title: string; sub: string; href: string; hot?: boolean }[] {
+  const out: { icon: IconName; title: string; sub: string; href: string; hot?: boolean }[] = [];
+  const { rules } = plans;
+  const pending = plans.approvals.filter((a) => a.status === "menunggu");
+  const overdue = pending.filter((a) => isOverdue(a, rules, now));
+  const decidable = pending.filter((a) => canDecide(a, { role: user.role, approvalBackup: user.approvalBackup }, rules, now));
+  const late = plans.goals.flatMap((g) => g.milestones.filter((m) => milestoneState(m, today) === "telat").map((m) => ({ g, m })));
+
+  if (user.role === "owner") {
+    if (pending.length) {
+      out.push({ icon: "approval", title: `${pending.length} menunggu persetujuanmu`, sub: pending.slice(0, 2).map((a) => a.title).join(" · "), href: "/app/setuju", hot: true });
+    }
+    if (overdue.length) {
+      const backup = plans.team.find((t) => t.approvalBackup)?.name ?? "Mami";
+      out.push({ icon: "schedule", title: `${overdue.length} lewat ${rules.fallbackHours} jam`, sub: `${backup} sekarang bisa ikut memutuskan kalau kamu belum sempat.`, href: "/app/setuju", hot: true });
+    }
+    if (target) {
+      out.push({
+        icon: "flag",
+        title: `Target ${MONTH_NAMES[Number(today.slice(5, 7)) - 1]}: ${Math.round((revenue / target) * 100)}% tercapai`,
+        sub: `Proyeksi ${formatRupiah(projection ?? revenue)} dari ${formatRupiah(target)}${late.length ? ` · ${late.length} milestone telat` : ""}`,
+        href: "/app/target",
+        hot: (projection ?? revenue) < target || late.length > 0,
+      });
+    } else if (late.length) {
+      out.push({ icon: "flag", title: `${late.length} milestone telat`, sub: late.slice(0, 2).map((x) => x.m.title).join(" · "), href: "/app/target?v=goals", hot: true });
+    }
+    return out;
+  }
+
+  if (decidable.length) {
+    out.push({
+      icon: "approval",
+      title: `${decidable.length} pengajuan bisa kamu putuskan`,
+      sub: `Alto belum jawab lebih dari ${rules.fallbackHours} jam: ${decidable[0].title}`,
+      href: "/app/setuju",
+      hot: true,
+    });
+  } else if (user.approvalBackup && pending.length) {
+    out.push({ icon: "approval", title: `${pending.length} pengajuan menunggu Alto`, sub: `Kamu bisa ikut memutuskan kalau Alto belum jawab dalam ${rules.fallbackHours} jam.`, href: "/app/setuju", hot: false });
+  }
+  const mine = plans.approvals.find((a) => a.requestedBy === user.id);
+  if (mine && mine.status !== "dicatat" && !decidable.some((a) => a.id === mine.id)) {
+    out.push({ icon: "approval", title: `Pengajuanmu: ${mine.status === "menunggu" ? "menunggu Alto" : mine.status}`, sub: mine.title, href: "/app/setuju?f=semua", hot: false });
+  }
+  const myLate = late.filter((x) => x.m.pic === user.id);
+  const myNext = openMilestones(plans.goals).filter((x) => x.milestone.pic === user.id);
+  if (myLate.length) {
+    out.push({ icon: "flag", title: `${myLate.length} milestone-mu telat`, sub: myLate.slice(0, 2).map((x) => x.m.title).join(" · "), href: "/app/target?v=goals", hot: true });
+  } else if (myNext.length) {
+    const n = myNext[0];
+    out.push({ icon: "flag", title: `Milestone berikutnya: ${n.milestone.title}`, sub: `${formatDateId(n.milestone.dueDate, false)} · ${n.goal.title}`, href: "/app/target?v=goals", hot: false });
+  }
+  return out;
 }

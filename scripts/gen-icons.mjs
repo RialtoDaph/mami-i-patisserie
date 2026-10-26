@@ -14,7 +14,7 @@ const ICONS = [
   "monitoring", "moped", "more_horiz", "notifications", "password", "payments", "person_add", "photo_camera",
   "picture_as_pdf", "qr_code_2", "radio_button_unchecked", "receipt_long", "redeem", "remove", "report", "schedule",
   "search", "send", "settings", "shopping_bag", "shopping_basket", "skillet", "snooze", "sticky_note_2", "storefront",
-  "summarize", "table_view", "target", "task_alt", "timer", "touch_app", "trending_up", "upload", "verified_user",
+  "summarize", "table_view", "target", "task_alt", "timer", "touch_app", "pending", "trending_up", "upload", "verified_user",
   "warning",
 ];
 

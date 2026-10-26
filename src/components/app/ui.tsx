@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/brand";
+import { clock } from "@/lib/plans/time";
 
 // Internal app building blocks (prototype "App Internal v2"): butter-50 panels with 1.5px lines and 6px radius,
 // uppercase section labels, tappable list rows, local underline tabs and rectangular filter chips.
@@ -106,4 +107,36 @@ export function Kpi({
 
 export function EmptyNote({ children }: { children: React.ReactNode }) {
   return <p className="rounded-md border-[1.5px] border-dashed border-brand-espresso/20 px-4 py-6 text-center text-[15px] text-brand-muted">{children}</p>;
+}
+
+/** Indonesia + Germany clocks (Alto lives in Germany). */
+export function Clocks({ now }: { now: number }) {
+  return (
+    <span className="flex flex-wrap gap-2">
+      {[
+        ["Indonesia", "Asia/Jakarta"],
+        ["Jerman", "Europe/Berlin"],
+      ].map(([label, tz]) => {
+        const c = clock(tz, now);
+        return (
+          <span key={tz} className="flex items-baseline gap-1.5 rounded-full border-[1.5px] border-brand-espresso/18 bg-white px-3 py-1">
+            <span className="text-[11px] font-bold tracking-wider text-brand-pistachio-deep uppercase">{label}</span>
+            <b className="font-display text-sm tabular-nums">{c.time}</b>
+            <span className="text-[11px] text-brand-muted capitalize">{c.day}</span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+/** Small status pill (approval and milestone states). */
+export function StatusPill({ tone, children }: { tone: "butter" | "olive" | "wine" | "white"; children: React.ReactNode }) {
+  const cls = {
+    butter: "bg-brand-butter text-brand-espresso",
+    olive: "bg-brand-pistachio-50 text-brand-olive",
+    wine: "bg-brand-wine-50 text-brand-wine",
+    white: "border border-brand-espresso/25 bg-white text-brand-muted",
+  }[tone];
+  return <span className={`inline-flex flex-none items-center rounded-full px-2.5 py-1 text-xs font-bold whitespace-nowrap ${cls}`}>{children}</span>;
 }

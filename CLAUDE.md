@@ -118,7 +118,14 @@ Mami uses a phone and is not very technical: the UI must work for her without lo
   Order = `OrderList.tsx` (search + chips) + detail; on ≥ 1000px the detail shows the list on the left. Produksi tabs:
   Jadwal (campaign table + day cards with recipe/ingredient needs) · Belanja (subtracts kitchen stock by default,
   `stok=0` off) · Stok (`/app/produksi/stok`) · Waste (`/app/produksi/waste`). Actions in `src/lib/kitchenActions.ts`.
-  App UI blocks: `src/components/app/ui.tsx` (Panel, SectionLabel, ListRow, LocalTabs, ChipLink, Kpi), `LineChart.tsx`.
+  App UI blocks: `src/components/app/ui.tsx` (Panel, SectionLabel, ListRow, LocalTabs, ChipLink, Kpi, Clocks, StatusPill),
+  `form.tsx` (AppField, NumberInput with dot separators, FormMessage), `LineChart.tsx`.
+- App 5c: Persetujuan `/app/setuju` (cards + Setujui/Tolak, "+ Ajukan" form, rules panel for Alto; `?ajukan=1&judul=…&nominal=…
+  &milestone=…` prefills from a milestone) and Target & Rencana `/app/target` (`?v=goals|roadmap`, `p=tahun`, `m=YYYY-MM`,
+  `y`, `area`, `ry`; params in `target/params.ts`). Pure logic + tests in `src/lib/plans` (approvals: needsApproval/canDecide,
+  goals: milestoneState "telat", targets: monthTarget inheritance, yearTarget, actuals, progress/projection, time: WIB +
+  Jerman). Data `src/lib/plansData.ts` (`team_names` RPC for names), actions `src/lib/planActions.ts`. Beranda owners get
+  approval/target/milestone items via `planItems` in `src/app/app/page.tsx`.
 - Public site (redesign 2026-10): route group `src/app/(site)` (`/`, `/menu`, `/hampers`, `/tentang`, `/faq`, `/kontak`,
   `/keranjang` = 3-step checkout; `/katalog` redirects to `/menu`). Page bodies in `src/components/site/pages`, header/
   drawers/footer in `src/components/site`. Data (stage 4): `src/lib/site/data.ts` (`loadSiteData`, server-only, React cache)
@@ -148,6 +155,7 @@ Mami uses a phone and is not very technical: the UI must work for her without lo
   in the SQL Editor because MCP calls with drop/delete/update hung; both are recorded in schema_migrations).
   20261024000001 (crew role) + 20261024000002 (team login) applied by Alto in the SQL Editor on 2026-10-24.
   20261025000001 (kitchen) applied via MCP on 2026-10-24; recorded live as version 20261024115039 "kitchen".
+  20261026000001 (approvals & targets) applied via MCP on 2026-10-26; recorded live as 20261026144454 "approvals_targets".
   New migrations: add a file in
   `supabase/migrations/` AND apply it to this project (ask Alto first).
 - Vercel project `mami-i-patisserie` (team altodaphino-6734s-projects), auto-deploys `main`.
@@ -281,6 +289,21 @@ Status 2026-09-27: Vercel secret key made "sensitive" (resolved). Items below we
   ingredients with a reason; value = HPP or ingredient price. "Selesai dibuat" = `production_marks` per day/product.
   Beranda revenue = pre-order only until Majoo reports (5f); target bars come with 5c. "DP telat" = DP still short
   and ordered ≥ 2 days ago or due within 3 days. Payment label `dp_ok` is "DP cukup" (prototype).
+- 2026-10-26: **5c** (Claude's calls, per the approved plan; prototype wins):
+  1. Approval kinds alat / harga / karyawan / campaign / lain. harga + karyawan always need Alto; campaign above the
+     campaign limit; everything else above the alat limit; otherwise status `dicatat`. Status is set only by the RPCs
+     `submit_approval` / `decide_approval` (no direct writes). Submit: owner/admin/manager. Rules: Alto only.
+  2. "Mami boleh memutuskan" = `profiles.approval_backup` (checkbox in Akun tim, only for role admin), because Nana and
+     Mami share the admin role. The backup may decide only after `fallback_hours`.
+  3. Targets per month inherit the latest earlier month; no default numbers (empty = "Belum ada target"). Yearly target =
+     sum of 12 months unless Alto sets one. Actuals = product sales by fulfil date (no shipping/discount); hampers =
+     products with web category hampers; food cost = HPP snapshot (else current HPP) / sales. Cafe revenue joins in 5f.
+     Beranda "Omzet bulan ini" now uses the same product-sales figure.
+  4. Goals/milestones: Alto creates/edits; owners change any milestone status, the manager only where they are PIC
+     (`set_milestone_status`). PIC = a person from profiles. "Telat" is computed. A milestone with a cost gets
+     "Ajukan biaya ke Persetujuan" (one open request per milestone). Milestone edit is a pencil (instead of the "…" menu).
+  5. Campaign form gained Kuota + Target omzet (shown under "Target per campaign"). Roadmap: goals + campaigns; the
+     "Akan ada" tools row comes with Alat (5h). Costing price edits are not yet routed into Persetujuan (submit kind harga).
 - NOTE: never write inside the `<!-- BEGIN/END:nextjs-agent-rules -->` block below; `next dev` rewrites it.
 
 <!-- BEGIN:nextjs-agent-rules -->

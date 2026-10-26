@@ -13,7 +13,7 @@ export function CampaignForm({
   defaultDpPercent,
   canEdit,
 }: {
-  initial: Campaign & { notes: string | null } | null;
+  initial: Campaign & { notes: string | null; quota?: number | null; targetRevenue?: number | null } | null;
   products: Product[];
   defaultDpPercent: number;
   canEdit: boolean;
@@ -24,6 +24,8 @@ export function CampaignForm({
   const [fStart, setFStart] = useState(initial?.fulfillStart ?? "");
   const [fEnd, setFEnd] = useState(initial?.fulfillEnd ?? "");
   const [dp, setDp] = useState(initial?.dpPercent != null ? formatNumber(initial.dpPercent, 2) : "");
+  const [quota, setQuota] = useState(initial?.quota != null ? String(initial.quota) : "");
+  const [target, setTarget] = useState(initial?.targetRevenue != null ? formatNumber(initial.targetRevenue) : "");
   const [active, setActive] = useState(initial?.isActive ?? true);
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [selected, setSelected] = useState<Record<string, string | null>>(
@@ -43,6 +45,8 @@ export function CampaignForm({
         fulfillStart: fStart,
         fulfillEnd: fEnd,
         dpPercent: dp.trim() ? parseNumberInput(dp) : null,
+        quota: quota.trim() ? parseNumberInput(quota) : null,
+        targetRevenue: target.trim() ? parseNumberInput(target) : null,
         isActive: active,
         notes,
         products: Object.entries(selected)
@@ -71,6 +75,17 @@ export function CampaignForm({
           <span className="field-label">DP (%)</span>
           <input value={dp} onChange={(e) => setDp(e.target.value)} inputMode="decimal" className="input" placeholder={`kosong = default ${formatNumber(defaultDpPercent, 2)}%`} />
         </label>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label>
+            <span className="field-label">Kuota (box)</span>
+            <input value={quota} onChange={(e) => setQuota(e.target.value)} inputMode="numeric" className="input" placeholder="kosong = tanpa batas" />
+          </label>
+          <label>
+            <span className="field-label">Target omzet (Rp)</span>
+            <input value={target} onChange={(e) => setTarget(e.target.value)} inputMode="numeric" className="input" placeholder="opsional" />
+          </label>
+        </div>
 
         <section>
           <h2 className="mb-2 font-bold text-cocoa">Produk dalam campaign</h2>

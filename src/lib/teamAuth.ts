@@ -98,12 +98,14 @@ export async function savePerson(_prev: ActionResult, formData: FormData): Promi
   const id = String(formData.get("id") ?? "");
   const { fullName, title, role, pin } = readPerson(formData);
   const isActive = formData.get("is_active") === "on";
+  // Only an Owner-role (admin) person can be the backup decider (decide_approval checks the same).
+  const approvalBackup = formData.get("approval_backup") === "on" && role === "admin";
   if (!fullName) return { error: "Nama wajib diisi." };
   if (pin && !/^[0-9]{4}$/.test(pin)) return { error: "PIN harus 4 angka." };
   if (id === me.id && (role !== "owner" || !isActive)) return { error: "Akun Alto sendiri tetap Owner dan aktif." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("profiles").update({ full_name: fullName, title, role, is_active: isActive }).eq("id", id);
+  const { error } = await supabase.from("profiles").update({ full_name: fullName, title, role, is_active: isActive, approval_backup: approvalBackup }).eq("id", id);
   if (error) return { error: "Gagal menyimpan." };
   if (pin) {
     const { error: pinError } = await supabase.rpc("set_pin", { p_user: id, p_pin: pin });

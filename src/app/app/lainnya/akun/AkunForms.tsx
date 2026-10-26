@@ -13,6 +13,7 @@ export interface PersonView {
   title: string;
   role: AppRole | null;
   isActive: boolean;
+  approvalBackup: boolean;
   hasPin: boolean;
   locked: boolean;
   isMe: boolean;
@@ -90,6 +91,15 @@ export function PersonRow({ person, first }: { person: PersonView; first: boolea
             Aktif (bisa masuk)
             {person.isMe && <input type="hidden" name="is_active" value="on" />}
           </label>
+          {!person.isMe && (
+            <label className="flex min-h-11 items-start gap-2.5 py-2 text-[15px]">
+              <input type="checkbox" name="approval_backup" defaultChecked={person.approvalBackup} className="mt-0.5 size-5 flex-none accent-brand-wine" />
+              <span>
+                Pemutus cadangan persetujuan
+                <span className="block text-[13px] text-brand-muted">Boleh memutuskan pengajuan yang belum Alto jawab dalam batas jam. Hanya untuk peran Owner.</span>
+              </span>
+            </label>
+          )}
           <Notice state={state} />
           <div className="flex gap-2">
             <SubmitButton className={submitClass}>Simpan</SubmitButton>

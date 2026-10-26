@@ -156,6 +156,8 @@ export interface CurrentUser {
   /** Shown under the name, e.g. "Owner", "Barista". */
   title: string;
   role: AppRole | null;
+  /** May decide approvals Alto has not answered in time (Mami). */
+  approvalBackup: boolean;
 }
 
 /** Logged-in user with role. Redirects to /login when not logged in. */
@@ -166,7 +168,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   if (!claims?.sub) redirect("/login");
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role, title, is_active")
+    .select("full_name, role, title, is_active, approval_backup")
     .eq("id", claims.sub)
     .maybeSingle();
   return {
@@ -174,6 +176,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
     email: (claims.email as string | undefined) ?? null,
     fullName: profile?.full_name ?? "",
     title: profile?.title ?? "",
+    approvalBackup: profile?.approval_backup ?? false,
     role: profile?.is_active ? ((profile.role as AppRole | null) ?? null) : null,
   };
 });

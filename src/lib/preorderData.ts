@@ -19,7 +19,7 @@ interface ProductRow {
 interface CampaignRow {
   id: string; name: string; preorder_open: string; preorder_close: string; fulfill_start: string | null;
   fulfill_end: string | null; dp_percent: Num | null; is_active: boolean; notes: string | null; is_dummy: boolean;
-  slug: string | null; quota: number | null;
+  slug: string | null; quota: number | null; target_revenue: Num | null;
   campaign_products: { product_id: string; price_override: Num | null }[];
 }
 interface CustomerRow { id: string; name: string; whatsapp: string; address: string | null; notes: string | null; is_dummy: boolean; created_at: string }
@@ -42,7 +42,9 @@ interface SettingsRow {
 }
 
 export interface ProductFull extends Product { isDummy: boolean; webCategory: WebCategory }
-export interface CampaignFull extends Campaign { notes: string | null; isDummy: boolean; slug: string | null; quota: number | null }
+export interface CampaignFull extends Campaign {
+  notes: string | null; isDummy: boolean; slug: string | null; quota: number | null; targetRevenue: number | null;
+}
 export interface CustomerFull extends Customer { isDummy: boolean; createdAt: string }
 export interface OrderFull extends Order { isDummy: boolean }
 
@@ -57,6 +59,7 @@ const mapCampaign = (r: CampaignRow): CampaignFull => ({
   id: r.id, name: r.name, preorderOpen: r.preorder_open, preorderClose: r.preorder_close,
   fulfillStart: r.fulfill_start, fulfillEnd: r.fulfill_end, dpPercent: numOrNull(r.dp_percent),
   isActive: r.is_active, notes: r.notes, isDummy: r.is_dummy, slug: r.slug, quota: r.quota,
+  targetRevenue: numOrNull(r.target_revenue),
   products: r.campaign_products.map((cp) => ({ productId: cp.product_id, priceOverride: numOrNull(cp.price_override) })),
 });
 

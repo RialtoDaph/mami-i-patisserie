@@ -1,6 +1,6 @@
 // UI-side permission checks. The database (RLS + triggers) is the real enforcement;
 // these only decide what to show. Keep in sync with 20260926000003_rls_and_rpc.sql,
-// 20260927000002_preorder_rls_rpc.sql and 20261024000002_team_login.sql. Tab access per role: src/lib/appNav.ts.
+// 20260927000002_preorder_rls_rpc.sql, 20261024000002_team_login.sql and 20261026000001_approvals_targets.sql. Tab access per role: src/lib/appNav.ts.
 
 export type AppRole = "owner" | "admin" | "produksi" | "manager" | "crew";
 
@@ -21,7 +21,9 @@ export type Action =
   | "profit.view"
   | "team.manage"
   | "waste.add"
-  | "waste.deleteAny";
+  | "waste.deleteAny"
+  | "plans.manage"
+  | "approval.submit";
 
 const RULES: Record<Action, AppRole[]> = {
   "ingredient.edit": ["owner", "admin", "produksi"],
@@ -41,6 +43,9 @@ const RULES: Record<Action, AppRole[]> = {
   "team.manage": ["owner"],
   "waste.add": ["owner", "admin", "produksi"],
   "waste.deleteAny": ["owner", "admin"],
+  // Approval rules, targets, goals and milestones: Alto only.
+  "plans.manage": ["owner"],
+  "approval.submit": ["owner", "admin", "manager"],
 };
 
 export function can(role: AppRole | null, action: Action): boolean {
